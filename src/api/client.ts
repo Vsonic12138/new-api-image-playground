@@ -15,9 +15,11 @@ async function parseResponse(res: Response): Promise<any> {
 export async function createImages(prompt: string, settings: AppSettings, onProgress?: (phase: ImageProgressPhase) => void): Promise<AssetRef[]> {
   onProgress?.('preparing')
   if (MOCK) {
+    await sleep(260)
     onProgress?.('requesting')
-    await sleep(750)
+    await sleep(1050)
     onProgress?.('saving')
+    await sleep(380)
     const result = []
     for (let i = 0; i < settings.count; i++) {
       const src = SAMPLE_URLS[(samplePointer++) % SAMPLE_URLS.length]
@@ -38,9 +40,11 @@ export async function createImages(prompt: string, settings: AppSettings, onProg
 export async function editImages(prompt: string, image: AssetRef, settings: AppSettings, annotated?: Blob, onProgress?: (phase: ImageProgressPhase) => void): Promise<AssetRef[]> {
   onProgress?.('preparing')
   if (MOCK) {
+    await sleep(280)
     onProgress?.('requesting')
-    await sleep(900)
+    await sleep(1150)
     onProgress?.('saving')
+    await sleep(380)
     return [{ id: `sample-edit-${Date.now()}`, src: SAMPLE_URLS[(samplePointer++) % SAMPLE_URLS.length], parentId: image.id, createdAt: Date.now() }]
   }
   const file = annotated
