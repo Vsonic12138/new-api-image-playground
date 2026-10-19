@@ -12,9 +12,9 @@ import { fileFromAsset } from './lib/image-store'
 
 function truncate(s: string, n = 30) { return s.length > n ? `${s.slice(0, n)}…` : s }
 const modes: { id: WorkMode; label: string; icon: typeof ImageIcon }[] = [
-  { id: 'generate', label: '生图', icon: ImageIcon },
-  { id: 'edit', label: '修图', icon: Pencil },
-  { id: 'chat', label: '对话', icon: MessageCircle },
+  { id: 'generate', label: 'generate', icon: ImageIcon },
+  { id: 'edit', label: 'edit', icon: Pencil },
+  { id: 'chat', label: 'chat', icon: MessageCircle },
 ]
 
 export default function App() {
@@ -118,7 +118,7 @@ export default function App() {
 
   return <div className={`app-shell ${theme === 'dark' ? 'theme-dark' : ''}`}>
     <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
-      <div className="brand"><div className="brand-icon"><Sparkles size={19}/></div><div>AI 创作 <span>Playground</span></div></div>
+      <div className="brand"><div className="brand-icon"><Sparkles size={19}/></div><div>{t('brand')}</div></div>
       <button className="new-chat-button" onClick={newChat}><Plus size={19}/>{t('newChat')} <kbd>⌘ K</kbd></button>
       <nav className="primary-nav"><button className="nav-active"><MessageCircle size={18}/>{t('createSpace')}</button><button onClick={() => setInspected(allImages[0])}><ImageIcon size={18}/>{t('myWorks')}</button><button onClick={() => setShowSettings(true)}><Settings2 size={18}/>{t('settingsModels')}</button></nav>
       <div className="history-header"><span>{t('recentChats')}</span><button onClick={newChat} title="新建"><Plus size={16}/></button></div>
