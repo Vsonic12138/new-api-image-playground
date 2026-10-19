@@ -40,7 +40,7 @@ jobs:
         run: |
           test -f dist/index.html
           test -f dist/samples/robot-room.webp
-          if grep -R -E "sk-c5510c0|NEW_API_TEST_TOKEN" dist; then
+          if grep -R -E "Bearer sk-|NEW_API_TEST_TOKEN" dist; then
             echo "::error::Detected a forbidden credential marker in the build"
             exit 1
           fi
