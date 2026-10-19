@@ -1,5 +1,8 @@
 # 双协议图文 Playground：设计与实施清单（2026-10）
 
+> **落地约束更新：** 本方案受 [ADR-002 双部署与 GPT Image 2.5 限定](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md) 约束：只开放 Flare/Sunburst 两款图片模型；Standalone 与 Embedded 共享核心，NewAPI 按用户自己创建的 Token ID 选择并验证 Group。仅有这两个图片模型时不能假定标准 Responses 的 image tool 或 Chat 图片输出可用。
+
+
 > **架构决策更新：** 首先参考 [ADR-001：协议复用与清晰分层架构](PROTOCOL_REUSE_ARCHITECTURE.zh-CN.md)。NewAPI 已经包含 Chat ↔ Responses 转换、图片 Relay、SSE Hook 及相关第三方依赖，下面的模块列表是**抽象职责**，不是必须创建一套新的协议栈。正式集成必须复用既有 Relay / 计费和登录态。
 
 > **状态：架构设计，不代表已经在 Pages 上完成真实模型调用。** GitHub Pages 当前仍是 Mock。浏览器 IndexedDB/LocalStorage 继续保存图片和会话；R2、站点作品集及保留期限仅保持在规划文档中。本文件不含上游凭证，也不触发付费 API。
