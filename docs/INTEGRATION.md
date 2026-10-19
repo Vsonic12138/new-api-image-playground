@@ -1,5 +1,8 @@
 # Integration plan: Vsonic12138/new-api
 
+> 双部署入口、用户 Token ID 安全选择、分组绑定和两款 GPT Image 2.5 图片模型约束见 [ADR-002](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md)。嵌入式和独立部署共用核心，Key 永不下发给嵌入式前端。
+
+
 > 云端作品库、管理员保留期限、到期通知和定时清理的详细实施规范见 [CLOUD_GALLERY_RETENTION.zh-CN.md](CLOUD_GALLERY_RETENTION.zh-CN.md)。**该功能尚未上线。**
 
 > 双协议图文对话（图片与文字同时支持 Chat / Responses；兼容 Images API）设计：[DUAL_PROTOCOL_PLAYGROUND.zh-CN.md](DUAL_PROTOCOL_PLAYGROUND.zh-CN.md)。Chat 图片生成仅在经过验证的供应商扩展下启用。
