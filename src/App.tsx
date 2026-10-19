@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { LANGUAGE_OPTIONS, toIntlLocale } from './i18n/resources'
 import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelLeftClose, PanelLeftOpen, X, Menu, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
 import type { AppSettings, AssetRef, Conversation, ImageProgressPhase, Message, WorkMode } from './types'
-import { uuid } from './types'
+import { isImageModel, uuid } from './types'
 import { loadConversations, loadSettings, makeConversation, SESSION_KEY, SETTINGS_KEY } from './lib/conversations'
 import { createImages, editImages, importImage, isMockMode, sendChat } from './api/client'
 import { ImageView } from './components/ImageView'
@@ -202,7 +202,7 @@ export default function App() {
     </div>
     </div>
     {showSettings && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowSettings(false) }}><div className="settings-modal" role="dialog" aria-modal="true"><div className="settings-head"><h2>{t('settingsTitle')}</h2><button className="icon-button" onClick={() => setShowSettings(false)}><X size={20}/></button></div><p className="muted">{t('settingsDesc')}</p>
-      <label>{t('imageModel')}<input value={settings.imageModel} onChange={e => setSettings(s => ({ ...s, imageModel: e.target.value }))}/></label>
+      <label>{t('imageModel')}<select value={settings.imageModel} onChange={e => { if (isImageModel(e.target.value)) setSettings(s => ({...s, imageModel:e.target.value as typeof s.imageModel})) }}><option value="gpt-image-2.5-flare">gpt-image-2.5-flare</option><option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst</option></select></label>
       <label>{t('chatModel')}<input value={settings.chatModel} onChange={e => setSettings(s => ({ ...s, chatModel: e.target.value }))}/></label>
       <label>{t('imageSize')}<select value={settings.size} onChange={e => setSettings(s => ({ ...s, size: e.target.value }))}><option value="1024x1024">1024 × 1024</option><option value="1536x1024">1536 × 1024</option><option value="1024x1536">1024 × 1536</option><option value="auto">auto（由上游决定）</option></select></label>
       <label>{t('imageNumber')}<select value={settings.count} onChange={e => setSettings(s => ({ ...s, count: Number(e.target.value) }))}><option value={1}>1 张</option><option value={2}>2 张</option><option value={3}>3 张</option><option value={4}>4 张</option></select></label>
