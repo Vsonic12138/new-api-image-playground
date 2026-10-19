@@ -1,3 +1,4 @@
+import i18n from 'i18next'
 import type { AppSettings, Conversation } from '../types'
 import { DEFAULT_SETTINGS, uuid } from '../types'
 export const SESSION_KEY = 'new-api-image-playground:v1:sessions'
@@ -7,9 +8,9 @@ export function makeConversation(): Conversation {
 }
 function example(): Conversation {
   const now = Date.now()
-  return { id: 'welcome-demo', title: '蓝色机器人猫 · 图片创作示例', createdAt: now, updatedAt: now, messages: [
-    { id: 'demo-u', role: 'user', mode: 'generate', text: '帮我生成一只可爱的蓝色机器人猫，在阳光温暖的房间里，3D 卡通风格。', images: [], createdAt: now - 60000 },
-    { id: 'demo-a', role: 'assistant', mode: 'generate', text: '已经生成了示例图片。点击图片可查看详情，或者选择「继续编辑」。', images: [
+  return { id: 'welcome-demo', title: i18n.t('exampleTitle', {ns:'imagePlayground'}), createdAt: now, updatedAt: now, messages: [
+    { id: 'demo-u', role: 'user', mode: 'generate', text: i18n.t('examplePrompt', {ns:'imagePlayground'}), images: [], createdAt: now - 60000 },
+    { id: 'demo-a', role: 'assistant', mode: 'generate', text: i18n.t('exampleAnswer', {ns:'imagePlayground'}), images: [
       { id: 'demo-1', src: `${import.meta.env.BASE_URL}samples/robot-room.webp`, createdAt: now - 59000 },
       { id: 'demo-2', src: `${import.meta.env.BASE_URL}samples/robot-sky.webp`, createdAt: now - 58000 },
     ], createdAt: now - 57000 },
