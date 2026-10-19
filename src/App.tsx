@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGE_OPTIONS, toIntlLocale } from './i18n/resources'
 import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelLeftClose, PanelLeftOpen, X, Menu, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
-import type { AppSettings, AssetRef, Conversation, Message, WorkMode } from './types'
+import type { AppSettings, AssetRef, Conversation, ImageProgressPhase, Message, WorkMode } from './types'
 import { uuid } from './types'
 import { loadConversations, loadSettings, makeConversation, SESSION_KEY, SETTINGS_KEY } from './lib/conversations'
 import { createImages, editImages, importImage, isMockMode, sendChat } from './api/client'
 import { ImageView } from './components/ImageView'
 import { ImageLightbox } from './components/ImageLightbox'
 import { EditorModal } from './components/EditorModal'
+import { GenerationProgress } from './components/GenerationProgress'
 import { fileFromAsset } from './lib/image-store'
 
 function truncate(s: string, n = 30) { return s.length > n ? `${s.slice(0, n)}…` : s }
@@ -29,6 +30,9 @@ export default function App() {
   const [selected, setSelected] = useState<AssetRef | undefined>()
   const [inspected, setInspected] = useState<AssetRef | undefined>()
   const [editorTarget, setEditorTarget] = useState<AssetRef | undefined>()
+  const [editorReturnAsset, setEditorReturnAsset] = useState<AssetRef | undefined>()
+  const [previewHandoff, setPreviewHandoff] = useState(false)
+  const handoffTimer = useRef<number | undefined>(undefined)
   const [showSettings, setShowSettings] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('new-api-image-playground:sidebar-collapsed') === 'true')
@@ -40,6 +44,7 @@ export default function App() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const active = convos.find(c => c.id === activeId) || convos[0]
 
+  useEffect(() => () => window.clearTimeout(handoffTimer.current), [])
   useEffect(() => { localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
   useEffect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) }, [settings])
   useEffect(() => { localStorage.setItem('new-api-image-playground:theme', theme) }, [theme])
@@ -53,14 +58,23 @@ export default function App() {
   function modify(id: string, updater: (c: Conversation) => Conversation) {
     setConvos(old => old.map(c => c.id === id ? updater(c) : c))
   }
+  function cancelHandoff() {
+    window.clearTimeout(handoffTimer.current)
+    setPreviewHandoff(false)
+    setEditorReturnAsset(undefined)
+    setEditorTarget(undefined)
+  }
   function newChat() {
+    cancelHandoff()
     const c = makeConversation()
     setConvos(old => [c, ...old]); setActiveId(c.id); setSelected(undefined); setInspected(undefined); setText(''); setSidebarOpen(false)
   }
   function chooseConversation(c: Conversation) {
+    cancelHandoff()
     setActiveId(c.id); setSelected(undefined); setInspected(undefined); setSidebarOpen(false)
   }
   function deleteConversation(id: string) {
+    cancelHandoff()
     const left = convos.filter(c => c.id !== id)
     if (!left.length) { const next = makeConversation(); setConvos([next]); setActiveId(next.id) }
     else { setConvos(left); if (activeId === id) setActiveId(left[0].id) }
@@ -70,7 +84,30 @@ export default function App() {
     try { const asset = await importImage(file); setSelected(asset); setMode('edit'); setNotice(t('uploadReady')) }
     catch (e) { setNotice(e instanceof Error ? e.message : t('uploadFailed')) }
   }
-  function openEditor(asset: AssetRef) { setEditorTarget(asset); setSelected(asset); setMode('edit') }
+  function openEditor(asset: AssetRef) {
+    setEditorReturnAsset(undefined)
+    setEditorTarget(asset)
+    setSelected(asset)
+    setMode('edit')
+  }
+  function editFromPreview(asset: AssetRef) {
+    if (previewHandoff) return
+    setPreviewHandoff(true)
+    setSelected(asset)
+    setMode('edit')
+    setEditorReturnAsset(asset)
+    window.clearTimeout(handoffTimer.current)
+    handoffTimer.current = window.setTimeout(() => {
+      setInspected(undefined)
+      setEditorTarget(asset)
+      setPreviewHandoff(false)
+    }, 190)
+  }
+  function closeEditor() {
+    setEditorTarget(undefined)
+    if (editorReturnAsset) setInspected(editorReturnAsset)
+    setEditorReturnAsset(undefined)
+  }
   async function download(asset: AssetRef) {
     try {
       const file = await fileFromAsset(asset)
@@ -89,24 +126,28 @@ export default function App() {
     setBusy(true)
     setText('')
     setEditorTarget(undefined)
+    setEditorReturnAsset(undefined)
     const conversationId = active.id
     const input: Message = { id: uuid(), role: 'user', mode: actualMode, text: cleanPrompt, images: actualMode === 'edit' && image ? [image] : [], createdAt: Date.now() }
     const answerId = uuid()
-    const pending: Message = { id: answerId, role: 'assistant', mode: actualMode, text: '', images: [], createdAt: Date.now(), status: 'pending' }
+    const pending: Message = { id: answerId, role: 'assistant', mode: actualMode, text: '', images: [], createdAt: Date.now(), status: 'pending', progressPhase: 'preparing' }
     modify(conversationId, c => ({ ...c, title: c.messages.length ? c.title : truncate(cleanPrompt, 24), updatedAt: Date.now(), messages: [...c.messages, input, pending] }))
     const previous = active.messages
       .filter(m => m.mode === 'chat' && m.text && m.status !== 'error')
       .map(m => ({ role: m.role, content: m.text }))
+    const reportProgress = (phase: ImageProgressPhase) => {
+      modify(conversationId, c => ({...c, messages: c.messages.map(m => m.id === answerId ? {...m, progressPhase: phase} : m)}))
+    }
     ;(async () => {
       try {
         let answer = ''
         let images: AssetRef[] = []
         if (actualMode === 'generate') {
-          images = await createImages(cleanPrompt, settings)
+          images = await createImages(cleanPrompt, settings, reportProgress)
           answer = t('generatedCount', {count: images.length})
         } else if (actualMode === 'edit' && image) {
           const annotatedPrompt = annotated ? `${cleanPrompt}\n参考图片上含有红色圈选标记，请理解为需要修改的位置，生成图中不要保留标记，其它部分尽可能保持一致。` : cleanPrompt
-          images = await editImages(annotatedPrompt, image, settings, annotated)
+          images = await editImages(annotatedPrompt, image, settings, annotated, reportProgress)
           answer = t('editedCount', {count: images.length}) + (annotated ? ` ${t('annotationsLimit')}` : '')
         } else answer = await sendChat(cleanPrompt, previous, settings)
         modify(conversationId, c => ({ ...c, updatedAt: Date.now(), messages: c.messages.map(m => m.id === answerId ? { ...m, text: answer, images, status: 'done' as const } : m) }))
@@ -145,7 +186,9 @@ export default function App() {
         {active?.messages.map(message => <div key={message.id} className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}>
           {message.role === 'assistant' && <div className="assistant-avatar"><Sparkles size={17}/></div>}
           <div className="message-inner"><div className="message-time">{time(message.createdAt)} · {t(message.mode)}</div>
-            {message.role === 'user' ? <div className="user-bubble-text">{message.text}</div> : message.status === 'pending' ? <div className="pending-answer" role="status" aria-live="polite"><div className="pending-orbit"><Sparkles size={17}/></div><span>{message.mode === 'generate' ? t('generating') : message.mode === 'edit' ? t('editing') : t('responding')}</span><span className="pending-dots" aria-hidden="true"><i/><i/><i/></span></div> : <div className={`assistant-text ${message.status === 'error' ? 'error-text' : ''}`}>{message.text}</div>}
+            {message.role === 'user' ? <div className="user-bubble-text">{message.text}</div> : message.status === 'pending' ? (message.mode === 'chat'
+              ? <div className="pending-answer" role="status" aria-live="polite"><div className="pending-orbit"><Sparkles size={17}/></div><span>{t('responding')}</span><span className="pending-dots" aria-hidden="true"><i/><i/><i/></span></div>
+              : <GenerationProgress mode={message.mode} phase={message.progressPhase} startedAt={message.createdAt}/>) : <div className={`assistant-text ${message.status === 'error' ? 'error-text' : ''}`}>{message.text}</div>}
             {message.images.length > 0 && <div className={`result-images ${message.role === 'user' ? 'user-images' : ''}`}>{message.images.map(image => <div key={image.id} className="result-image-item"><ImageView asset={image} onClick={() => { setInspected(image); setSelected(image) }}/>
               {message.role === 'assistant' && <div className="image-actions"><button onClick={() => openEditor(image)} title={t('continueEdit')}><Pencil size={16}/>{t('continueEdit')}</button><button onClick={() => { const previousPrompt = [...active.messages].filter(m => m.role === 'user' && m.createdAt <= message.createdAt).at(-1)?.text; if (previousPrompt) submit(previousPrompt, 'generate') }} title={t('regenerate')}><RefreshCw size={16}/>{t('regenerate')}</button><button onClick={() => download(image)} title={t('download')}><Download size={16}/></button></div>}
             </div>)}</div>}
@@ -165,8 +208,8 @@ export default function App() {
       <label>{t('imageNumber')}<select value={settings.count} onChange={e => setSettings(s => ({ ...s, count: Number(e.target.value) }))}><option value={1}>1 张</option><option value={2}>2 张</option><option value={3}>3 张</option><option value={4}>4 张</option></select></label>
       <div className="notice-box"><Info size={16}/><div>{t('upstreamCompatibilityNote')}</div></div>
       <button className="primary-button settings-done" onClick={() => setShowSettings(false)}><Check size={16}/>{t('saveSettings')}</button></div></div>}
-    {inspected && <ImageLightbox image={inspected} images={allImages} imageModel={settings.imageModel} onClose={() => setInspected(undefined)} onSelect={image => { setInspected(image); setSelected(image) }} onEdit={image => { setInspected(undefined); openEditor(image) }} onDownload={image => { void download(image) }}/>}
-    {editorTarget && <EditorModal asset={editorTarget} onClose={() => setEditorTarget(undefined)} onSubmit={(prompt, annotated) => submit(prompt, 'edit', annotated, editorTarget)}/>}
+    {inspected && <ImageLightbox image={inspected} images={allImages} imageModel={settings.imageModel} transitioningToEditor={previewHandoff} onClose={() => {if (!previewHandoff) setInspected(undefined)}} onSelect={image => { if (!previewHandoff) {setInspected(image);setSelected(image)} }} onEdit={editFromPreview} onDownload={image => { void download(image) }}/>}
+    {editorTarget && <EditorModal asset={editorTarget} fromPreview={!!editorReturnAsset} onClose={closeEditor} onSubmit={(prompt, annotated) => submit(prompt, 'edit', annotated, editorTarget)}/>}
     {notice && <div className="toast"><Info size={16}/>{notice}<button onClick={() => setNotice('')}><X size={14}/></button></div>}
   </div>
 }
