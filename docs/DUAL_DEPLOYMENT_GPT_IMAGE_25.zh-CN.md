@@ -4,22 +4,22 @@
 
 ## 1. 产品边界
 
-产品定位：**NewAPI Image Playground（GPT Image 2.5 专版）**，两种形式：
+产品定位：**多模型图文 Playground（仅图片生成模型限定为 GPT Image 2.5）**，两种形式：
 1. **Standalone**：作为独立域名/应用部署，可连接用户自己的 NewAPI 中转 Key；可使用独立轻量 BFF 保护凭证。
 2. **Embedded**：作为 NewAPI 前端模块运行，同源 Session 登录，直接选当前账号已有的 Key（仅选择 ID，不取明文）及用户允许的分组。
 
 两者共享：React 图文对话 UI、编辑器、请求编排、协议结果归一、语言包、IndexedDB 图片 Blob / localStorage 会话、图片版本关系。**只区别于运行时身份与 Transport Bridge**，不能做两套复制项目。
 
-**唯一支持的图片模型 ID**：
+**唯一支持的生图与修图模型 ID（仅约束图像输出，不限制 LLM/VLM）**：
 - `gpt-image-2.5-flare`：默认快捷生图，可在用户允许的范围内用于编辑。
 - `gpt-image-2.5-sunburst`：高精度修图与需要精细控制的生成。
-后端和 UI 模型选择器均使用这两个精确 ID；不默认引入 DALL-E、旧 GPT Image、Gemini、Midjourney 或其他厂商生成模型。不允许任意模型字符串绕过白名单。若渠道有站内合法别名，先由管理员做静态映射；UI 仍展示这两个产品模型。
+生图/修图后端和 UI 仅允许这两个精确 ID；不默认引入 DALL-E、旧 GPT Image、Gemini、Midjourney 或其他厂商**生图模型**。聊天与视觉理解的 LLM/VLM 不受该白名单限制，而是从 NewAPI 返回的当前用户已授权模型列表中选择（按分组、Token、能力过滤）。若图片模型有合法别名，由站点管理员做明确映射，不让客户端随意绕过限制。
 
 **保留 Chat、Responses、Images 的协议抽象，但“支持协议接口 ≠ 当前可实际调用”：**
-- **Images API**：官方 `POST /v1/images/generations`、`POST /v1/images/edits` 可以直接 `model=gpt-image-2.5-{flare|sunburst}`。对于现有仅提供图片模型的中转，优先落地这条路径。
-- **Responses API 图片**：官方 `image_generation` tool 的顶层 `model` 需要**另外的支持工具的主模型**，tool `model` 才是两款 GPT Image 2.5。当前中转若只开放这两个 image 模型、没有主模型，就必须把标准 Responses 图片模式标为“未配置”，不可假装可用。
+- **Images API**：官方 `POST /v1/images/generations`、`POST /v1/images/edits` 可直接 `model=gpt-image-2.5-{flare|sunburst}`。优先实现这条最直接的生图/修图路径，并以真实通道能力验证尺寸/质量/计费。
+- **Responses API 图片**：`image_generation` tool 的顶层 `model` 从该用户可用的 **LLM（必须验证支持 image_generation 工具）** 中选择；tool 的 `model` 严格为 Flare / Sunburst。用户确认中转还提供其他 LLM/VLM，因此**不能因为只开放两款图片模型就判定 Responses 不可用**。但有 LLM/VLM 不等于一定支持该工具，还需检查通道和实际 API。
 - **Chat API 图片**：标准 Chat Completions 并没有通用的出图响应协议。只在同一中转确认提供特定的 Chat 图片扩展并有 fixture 与实测后开启。当前默认不可用。
-- **Chat/Responses 普通文本对话**：需要对应能返回文本的主模型。如果中转仅有两个图片专用模型，文本模式应显示“当前中转未配置聊天模型”，不能将其作为文本模型硬调用，也不能自动替换成外部模型。
+- **Chat/Responses 普通文本对话与图片理解**：使用中转已提供、用户有权限的 **LLM/VLM**。Chat 与 Responses 各自判断协议支持；图片理解需要 VLM/多模态输入能力。**不对这些模型使用图片生成模型白名单**，也不默认假定任意 LLM 都能输出图片。
 - **连续编辑**：没有 Responses 图像工具也可在 UI 中使用 Images edits 逐步以最新结果/指定版本作参考，清楚说明并非持久 `previous_response_id` 对话上下文。
 
 文档依据：
@@ -30,7 +30,7 @@ https://developers.openai.com/api/docs/guides/tools-image-generation
 
 ```text
 packages/playground-core   (复用概念，实际可放 src/core 后逐步迁移)
-  ├── domain/              Intent, Model ID(2款), Asset, Message, Conversation, capability
+  ├── domain/              Intent, ImageModelId(2款), Text/VisionModelId(授权列表), Asset, Message, Conversation
   ├── application/         send, edit, version, transport selection, real progress
   ├── ui/                  composer, gallery, preview, annotation, i18n
   ├── storage/             IndexedDB blobs + localStorage metadata
@@ -111,7 +111,7 @@ UI 不将 API Key/渠道地址/真实上游 token 放入 Shared Core 的消息�
 ### 推荐：独立 SPA + 最小 BFF（可使用 Go，与 NewAPI Relay 分离）
 
 - 独立 BFF 负责设置的 NewAPI Base URL allowlist、临时会话、用户输入 Key 的临时加密/内存凭证、转发和限流、CORS、CSRF 与代理超时；前端不会收到或缓存服务端凭证。
-- 用户自己在 NewAPI 控制台创建 **低额度/仅两款 image model/必要 Group** 的 Token，一次输入到独立服务的安全连接流程。通过单独 HTTPS 页面与后端建立会话，Session Cookie 采用 HttpOnly/Secure/SameSite，响应头禁止缓存。
+- 用户自己在 NewAPI 控制台创建 **低额度、仅授权需要的模型（两款图像模型 + 可选 LLM/VLM）及必要 Group** 的 Token，一次输入到独立服务的安全连接流程。通过单独 HTTPS 页面与后端建立会话，Session Cookie 采用 HttpOnly/Secure/SameSite，响应头禁止缓存。用户也可以分别创建生图/聊天专用 Token。
 - 若要选择不同组，用户在 NewAPI 中为不同 Group 创建/配置 Token，独立前端切换已授权连接；无法凭借一个固定 Group Token 任意改组。
 - Key 不放到 `VITE_*`、构建产物、公开 GitHub Actions、localStorage/IndexedDB；服务器也不应该长期存放明文。多用户独立服务必须为每个会话隔离，限制内存/时长。
 - 独立 BFF 只负责**鉴权与请求转发**，不重做 NewAPI 的协议/用量结算；由远端 NewAPI 的 TokenAuth/Distribute/Relay 完成。
@@ -128,28 +128,30 @@ UI 不将 API Key/渠道地址/真实上游 token 放入 Shared Core 的消息�
 
 **运营模式**：站点启动后由 gateway 返回只读 capability，而不是以 `VITE_API_MODE !== 'relay'` 静默使用 Mock。独立站/嵌入站生产不可自动回退 Mock。
 
-初始可验证能力（仅有两个 image model、标准官方协议）：
+运行时能力应根据 **当前登录用户、所选 Token、Group、模型及协议** 查询，不应假定全站只有两款模型。示例返回（其中布尔值仅演示数据结构，**不代表已验证你的实际通道**）：
 ```json
 {
   "imageModels": ["gpt-image-2.5-flare", "gpt-image-2.5-sunburst"],
   "defaultGenerateModel": "gpt-image-2.5-flare",
   "defaultEditModel": "gpt-image-2.5-sunburst",
+  "llmModels": ["<from-user-authorized-newapi-models>"],
+  "vlmModels": ["<from-user-authorized-newapi-models>"],
   "transports": {
-    "images": {"generate": true, "edit": true},
-    "responses": {"generate": false, "edit": false, "reason": "no_supported_mainline_responses_model"},
-    "chat": {"generate": false, "edit": false, "reason": "no_verified_vendor_chat_image_extension"}
+    "images": {"generate": "unverified", "edit": "unverified"},
+    "responses": {"textChat": "unverified", "imageQa": "unverified", "imageTool": "unverified"},
+    "chat": {"textChat": "unverified", "imageQa": "unverified", "imageOutputExtension": "unsupported"}
   },
-  "textChat": {"chat": false, "responses": false, "reason": "no_text_model_configured"},
+  "responsesMainModelsWithImageTool": [],
   "storage": "browser"
 }
 ```
 
-上述为**待验证的初始化配置示例**，并不是在线中转的实际能力测试结果。Images 两项也必须先通过中转实际返回格式/扣费联调才标记 `verified`。Responses 和 Chat 扩展未来只作为后端能力开关，**不擅自添加其他图片模型**；如果需要额外的主模型，管理员明确添加后才能启用相应入口，并展示对应的额外成本。
+生产接口不能按模型名或“属于 VLM”就推断工具支持。NewAPI 已提供的 LLM/VLM 用于文本聊天、视觉理解、Responses 主模型候选；只有**经过验证**具备 image_generation 工具调用能力的模型才进入 `responsesMainModelsWithImageTool`。图片工具仍只能选择两款 GPT Image 2.5。Responses 主模型与图片工具可能产生分别计费，UI 应明确说明。
 
 ### 用户界面
 - 顶部：连接状态（独立 BYOK/已登录 NewAPI）、凭证（Key 名称+掩码/账号）、当前 Group（固定时只读）。
-- Composer：`生图`/`修图` 与两款 Image 2.5 模型；`协议` 高级选项展示 `Images` 可用，`Chat`/`Responses` 若尚未验证则灰掉并说明。
-- 未来用户的文本模式要等实际文本模型可用；不能让两个 image model 伪装文本聊天模型。
+- Composer：`生图`/`修图` 只允许两款 Image 2.5；`聊天`/`图片问答` 使用当前 Token/分组可用的 LLM/VLM 模型。`协议` 按当前任务和所选模型的真实支持情况呈现 Chat / Responses / Images，未验证选项灰掉并说明。
+- 文本及图片理解功能可以对接现有 LLM/VLM（须经过用户权限和协议校验）；不能把 Flare/Sunburst 当作普通文本模型，也不能把 VLM 的图片理解能力误判成图片输出。
 - 作品集和历史仍本地保存，显示“仅当前设备”而不提示已云端保存。
 - 连接失败、令牌到期/额度不足、Group 不支持或模型权限不足，应呈现明确可操作错误，绝不自动切换陌生 Key 或静默重复扣费。
 
@@ -173,7 +175,7 @@ POST /pg/image-playground/chat                   # 只有能力 verified 才开�
 2. **优先实测两款 Images API**：每个模型最小额度验证 generations+edits，识别 b64/url、质量和尺寸实际支持（须得到站长许可才收费测试）。
 3. **Standalone 可用版**：最小 BFF + 用户自有 Token 连接会话，Browser IndexedDB 保存。若坚持纯 GitHub Pages，需另做 CORS/BYOK 风险提示和手工确认。
 4. **Embedded NewAPI**：后端 tokenId 安全解析、组权限和计费路径扩展；前端调用同源 gateway，选择用户 Token/Group。
-5. **协议增强**：只在明确的文本模型/主模型支持下启用 Responses；只有第三方 Chat 图片扩展实际可用时才实现 Chat image parser。不放开其他图片模型。
+5. **协议增强**：从现有 NewAPI LLM/VLM 模型列表接入 Chat/Responses 文本与图片理解，验证支持 image_generation 工具的 Responses 主模型；第三方 Chat 图片扩展仅在具体渠道支持并验证后启用。始终只允许两款图片生成模型。
 6. **回归**：双用户隔离、撤销 Token 即时生效、固定组不能修改、图片模型限制、错误费用风险、本地历史、手机体验、已有 Chat/Responses Relay 用量不退化。
 
 ## 8. 明确非目标
