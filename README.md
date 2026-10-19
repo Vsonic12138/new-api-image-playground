@@ -2,7 +2,7 @@
 
 A standalone, integration-ready prototype of a ChatGPT-style image conversation workspace for [New API](https://github.com/QuantumNous/new-api), built with **React + TypeScript + Vite + react-konva**. Development happens outside the main New API repo; once proven, the `src` modules can be integrated into New API's existing Playground.
 
-**Status:** v0.1 MVP source scaffold. **No Mask / precise inpainting.**
+**Status:** Dual-host architecture in a draft PR; GitHub Pages remains Mock-only. Standalone BYOK has a Node BFF; NewAPI Embedded is an optional same-origin integration pending PR review. **No Mask / precise inpainting.**
 
 [中文说明 / Chinese README](README.zh-CN.md) · [无需安装的离线交互原型](demo/index.html)
 
@@ -84,3 +84,11 @@ The image model and chat model can be edited from the settings dialog. Model sup
 - [react-konva](https://github.com/konvajs/react-konva): annotation canvas library.
 
 Check respective component/library licenses and the license of New API before copying code into the main repository or offering a hosted version. If reusing code from OpenAI Image WebUI later, preserve its MIT attribution.
+
+## Dual-host builds
+
+- `npm run build:standalone`: builds the shared React application for the Node BFF. Launch behind HTTPS or use the Dockerfile.
+- `npm run build:embedded`: builds the **same React application** for NewAPI sessions. Serve `dist/` at `/pg-image-workspace/` on the NewAPI HTTPS origin.
+- NewAPI Fork draft PR #2 registers `/image-workspace` and authenticated `/pg/image-playground/*` routes. This is a native integration, not a Task Plugin marketplace install.
+
+See `docs/ARCHITECTURE_DUAL_HOST.md` and `integrations/newapi/README.md`.
