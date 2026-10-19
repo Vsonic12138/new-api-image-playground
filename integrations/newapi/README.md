@@ -19,9 +19,12 @@ request parsing. `src/host/adapter.ts` is the host boundary.
 
 ## Native integration steps (fork / patch)
 
-1. Build with `VITE_API_MODE=embedded` and register the UI as an authenticated
-   NewAPI frontend feature. Existing NewAPI already uses TanStack Router and
-   i18next; add the new page/translation namespace to the existing instances.
+1. Run `npm run build:embedded` in this repo. It produces the **same React UI**
+   with `/pg-image-workspace/` as its static base and NewAPI credentials as the
+   host adapter. Serve this directory from the **same origin as NewAPI** using
+   the sample Nginx location in `nginx-image-workspace.conf.example`.
+   In the NewAPI fork, PR #2 adds the authenticated `/image-workspace` page
+   with an iframe pointing at `/pg-image-workspace/` (a distinct static prefix).
 2. Provide the optional four authenticated `/pg/image-playground/*` endpoints
    from NewAPI PR #2, with the route-normalization follow-up. Verify the PR,
    merge only after authorization tests, then deploy a compatible NewAPI fork.
@@ -38,3 +41,12 @@ as an additional host adapter without changing the workspace core.
 
 The existing PR remains a draft until Go tests, multi-user authorization,
 Responses tool billing, multipart edits and real-provider smoke tests pass.
+
+## Deployment requirement
+
+The optional NewAPI UI route must **not** be enabled without deploying the
+same-origin embedded static assets. In particular, using a different hostname
+breaks the same-origin cookie contract. Embedded mode currently disables
+persistent local conversation metadata to avoid cross-account history leaks.
+Keep the native NewAPI PR in Draft until the static bundle, permissions and
+end-to-end image calls have been verified together.

@@ -10,7 +10,8 @@
     "check": "tsc -b",
     "build:standalone": "VITE_API_MODE=standalone npm run build",
     "start:standalone": "node server/standalone.mjs",
-    "check:server": "node --check server/standalone.mjs"
+    "check:server": "node --check server/standalone.mjs",
+    "build:embedded": "VITE_API_MODE=embedded npm run build -- --base=/pg-image-workspace/"
   },
   "dependencies": {
     "konva": "^10.0.0",

@@ -22,5 +22,7 @@ jobs:
         run: npm run build
       - name: Build production standalone bundle
         run: npm run build:standalone
+      - name: Build embedded NewAPI UI bundle
+        run: npm run build:embedded
       - name: Test standalone proxy against a fake upstream (no billable requests)
         run: node --test tests/standalone.test.mjs

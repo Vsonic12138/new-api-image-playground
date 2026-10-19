@@ -51,7 +51,7 @@ export default function App() {
   const updateModels = useCallback((models: string[]) => setAvailableModels(models), [])
 
   useEffect(() => () => window.clearTimeout(handoffTimer.current), [])
-  useEffect(() => { localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
+  useEffect(() => { if (runtimeMode !== 'embedded') localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
   useEffect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) }, [settings])
   useEffect(() => { localStorage.setItem('new-api-image-playground:theme', theme) }, [theme])
   useEffect(() => { localStorage.setItem('new-api-image-playground:sidebar-collapsed', String(sidebarCollapsed)) }, [sidebarCollapsed])

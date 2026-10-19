@@ -1,0 +1,12 @@
+# Include this LOCATION inside the existing HTTPS NewAPI server block.
+# Build Image Workspace first: npm run build:embedded
+# Copy dist/ to /srv/newapi-image-workspace/.
+# /pg/image-playground/* and /api/* must continue to proxy to NewAPI itself.
+# Do NOT serve it under a separate hostname: the UI relies on same-origin login.
+
+location ^~ /pg-image-workspace/ {
+    alias /srv/newapi-image-workspace/;
+    try_files $uri $uri/ /pg-image-workspace/index.html;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data: blob:; connect-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'" always;
+}

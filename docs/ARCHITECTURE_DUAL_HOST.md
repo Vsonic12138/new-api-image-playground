@@ -46,3 +46,13 @@ use a single UI implementation; no duplicate React application is created.
 `npm run check && npm run build && npm run build:standalone` should pass.
 `node --test tests/standalone.test.mjs` uses a fake upstream and never
 requests paid models. Real billing validation requires explicit approval.
+
+## Native same-origin mounting
+
+- Build once via `npm run build:embedded` for NewAPI's `/pg-image-workspace/`.
+- Configure the example reverse-proxy static location on the same HTTPS origin.
+- The NewAPI TanStack Router page at `/image-workspace` owns navigation and
+  authentication; its iframe points at the separately built feature bundle.
+- The iframe uses the same origin; it sends only Token IDs or authorized groups
+  in request headers, and the NewAPI backend verifies each request.
+- An embedded build never uses Standalone Node BYOK sessions.
