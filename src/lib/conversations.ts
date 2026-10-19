@@ -1,4 +1,5 @@
 import i18n from 'i18next'
+import { runtimeMode } from '../host/adapter'
 import type { AppSettings, Conversation } from '../types'
 import { DEFAULT_SETTINGS, isImageModel, uuid } from '../types'
 export const SESSION_KEY = 'new-api-image-playground:v1:sessions'
@@ -17,6 +18,9 @@ function example(): Conversation {
   ] }
 }
 export function loadConversations(): Conversation[] {
+  // Embedded accounts must not read another user's fixed-key browser history.
+  // Until user-scoped durable storage is available, keep embedded sessions ephemeral.
+  if (runtimeMode === 'embedded') return [makeConversation()]
   try {
     const raw = localStorage.getItem(SESSION_KEY)
     if (!raw) return [example()]

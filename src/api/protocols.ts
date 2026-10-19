@@ -1,47 +1,6 @@
-import type { ApiRuntime, ResolvedProtocol } from '../types'
-
-/**
- * Three delivery targets, one client interface:
- * relay: Vite loopback proxy (dev only); standalone: same-origin BFF;
- * embedded: NewAPI's authenticated Playground route. Never send an admin key from React.
- */
-export const runtimeMode: ApiRuntime = (() => {
-  const mode = import.meta.env.VITE_API_MODE
-  return mode === 'relay' || mode === 'standalone' || mode === 'embedded' ? mode : 'mock'
-})()
-export const isMockMode = runtimeMode === 'mock'
-
-const PREFIX: Record<Exclude<ApiRuntime, 'mock'>, string> = {
-  relay: '/relay/v1',
-  standalone: '/api/relay/v1',
-  embedded: '/pg/image-playground',
-}
-
-export function endpoint(protocol: ResolvedProtocol, operation?: 'generate' | 'edit'): string {
-  if (runtimeMode === 'mock') throw new Error('Mock mode must not call the API')
-  const prefix = PREFIX[runtimeMode]
-  if (protocol === 'chat') return `${prefix}/chat/completions`
-  if (protocol === 'responses') return `${prefix}/responses`
-  if (operation === 'generate') return `${prefix}/images/generations`
-  if (operation === 'edit') return `${prefix}/images/edits`
-  throw new Error('Images requires a generation or edit operation')
-}
-
-export type EmbeddedCredentialSelection =
-  | {mode:'account';group?:string}
-  | {mode:'token';tokenId:number}
-
-/** Ephemeral UI choice only. No API keys or tokens are stored here. */
-let embeddedCredential: EmbeddedCredentialSelection = {mode:'account'}
-export function setEmbeddedCredential(selection: EmbeddedCredentialSelection) {
-  embeddedCredential = selection
-}
-function currentCredentialHeaders():Record<string,string> {
-  if (runtimeMode !== 'embedded') return {}
-  return embeddedCredential.mode === 'token'
-    ? {'X-Playground-Token-ID':String(embeddedCredential.tokenId)}
-    : embeddedCredential.group ? {'X-Playground-Group':embeddedCredential.group} : {}
-}
+import { currentCredentialHeaders } from '../host/adapter'
+export { runtimeMode, isMockMode, endpoint, setEmbeddedCredential } from '../host/adapter'
+export type { EmbeddedCredentialSelection } from '../host/adapter'
 
 export class PlaygroundApiError extends Error {
   constructor(message: string, public status: number, public code?: string) { super(message); this.name = 'PlaygroundApiError' }

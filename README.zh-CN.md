@@ -76,10 +76,25 @@ NEW_API_TEST_TOKEN=你的低额度测试Token
 
 ## 重要说明
 
-- 本次只制作了独立工程文件，**没有直接修改原来的 `new-api` 仓库**。
-- 当前 GitHub 连接不支持新建仓库操作，因此本工程通过 ZIP 交付。你可以先在 GitHub 手动新建空仓库 `new-api-image-playground`，然后导入本项目。
-- 当前交付环境无法连接 npm registry，因此已经验证 TypeScript 代码的语法解析，但尚未完成 `npm install`、正式 React 构建及真实上游联调。**不要直接用于生产环境**。
+- 当前工作同时维护独立仓库 PR #1 和 NewAPI Fork PR #2；均为 Draft，尚未合并部署。
+- GitHub Actions 已执行无付费的类型检查、构建与模拟上游测试；真实上游调用和多用户生产安全验收仍未完成。
+
+
+
+
 - 当前默认是三种显式模式，不是自动调用工具的对话 Agent；这一项可以在后续版本增加。
 - 生产部署还需要图片对象存储、登录会话、限流、权限校验和稳定版本历史。
 
 完整集成指引：`docs/INTEGRATION.md`；验收条目：`docs/ACCEPTANCE.md`。
+
+## 同一份前端接入 NewAPI（非 Task Plugin）
+
+本仓库在 `integrations/newapi/` 提供原生集成方式。运行
+`npm run build:embedded` 后，把 `dist/` 静态文件部署在与 NewAPI
+**同域的** `/pg-image-workspace/` 路径；NewAPI Draft PR #2 的站内
+`/image-workspace` 页面会作为宿主加载它，通过登录会话和选定的
+Token ID 或授权分组向 `/pg/image-playground/*` 请求。
+
+该方案不需要额外复制一套 React 业务页面，也不是通过 NewAPI
+Task Plugin 市场直接安装的通用 UI 插件。具体反向代理配置、鉴权边界
+和上线条件参见 `integrations/newapi/README.md`。

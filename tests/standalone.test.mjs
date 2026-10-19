@@ -71,6 +71,35 @@ test('standalone BYOK proxy authenticates, isolates credentials and checks origi
     })
     assert.equal(response.status,200)
     assert.equal((await response.json()).choices[0].message.content,'hello')
+    // A browser can bypass dropdown restrictions, so the BFF must reject
+    // unsupported image models before contacting the upstream at all.
+    const countBefore=upstreamAuth.length
+    response=await fetch(base+'/api/relay/v1/images/generations',{
+      method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'gpt-image-2',prompt:'test'}),
+    })
+    assert.equal(response.status,400)
+    assert.equal(upstreamAuth.length,countBefore,'invalid image model must not reach upstream')
+    const edit=new FormData()
+    edit.append('model','gpt-image-2')
+    edit.append('prompt','test')
+    edit.append('image',new Blob(['image bytes'],{type:'image/png'}),'image.png')
+    response=await fetch(base+'/api/relay/v1/images/edits',{
+      method:'POST',headers:{Cookie:cookie,Origin:origin},body:edit,
+    })
+    assert.equal(response.status,400)
+    assert.equal(upstreamAuth.length,countBefore,'invalid edit model must not reach upstream')
+    response=await fetch(base+'/api/relay/v1/responses',{
+      method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'gpt-5',input:'test',tools:[{type:'image_generation',model:'gpt-image-2'}]}),
+    })
+    assert.equal(response.status,400)
+    assert.equal(upstreamAuth.length,countBefore,'invalid Responses tool must not reach upstream')
+    response=await fetch(base+'/api/relay/v1/responses',{
+      method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},
+      body:JSON.stringify({model:'gpt-5',input:'text only'}),
+    })
+    assert.equal(response.status,404,'ordinary Responses LLMs must not be blocked by image allowlist')
     response=await fetch(base+'/api/relay/v1/unknown',{
       method:'POST',headers:{Cookie:cookie,Origin:origin},
     })

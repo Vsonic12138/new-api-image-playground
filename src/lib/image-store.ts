@@ -2,6 +2,15 @@ import type { AssetRef } from '../types'
 import { uuid } from '../types'
 const DB_NAME = 'new-api-image-playground-assets'
 const STORE = 'images'
+const temporary = new Map<string, { blob: Blob; url: string }>()
+
+/** Keep results downloadable in this tab even if IndexedDB is unavailable/full. */
+function saveTemporary(blob: Blob, parentId?: string): AssetRef {
+  const id = uuid()
+  const url = URL.createObjectURL(blob)
+  temporary.set(id, { blob, url })
+  return { id, src: url, parentId, createdAt: Date.now(), volatile: true }
+}
 
 function db(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -24,6 +33,7 @@ export async function saveBlob(blob: Blob, parentId?: string): Promise<AssetRef>
   return { id, parentId, createdAt: Date.now() }
 }
 export async function getBlob(id: string): Promise<Blob | undefined> {
+  if (temporary.has(id)) return temporary.get(id)!.blob
   const database = await db()
   const result = await new Promise<Blob | undefined>((resolve, reject) => {
     const req = database.transaction(STORE).objectStore(STORE).get(id)
@@ -40,19 +50,42 @@ export function base64ToBlob(base64: string): Blob {
   return new Blob([bytes], { type: 'image/png' })
 }
 export async function saveImageResponse(data: { b64_json?: string; url?: string }, parentId?: string): Promise<AssetRef> {
-  if (data.b64_json) return saveBlob(base64ToBlob(data.b64_json), parentId)
+  if (data.b64_json) {
+    const blob = base64ToBlob(data.b64_json)
+    try { return await saveBlob(blob, parentId) }
+    catch { return saveTemporary(blob, parentId) }
+  }
   if (!data.url) throw new Error('上游图片响应中没有 url 或 b64_json')
   // Attempt an immediate durable cache. URLs from third-party relays can expire.
   try {
     const res = await fetch(data.url)
     if (!res.ok) throw new Error(`image fetch ${res.status}`)
-    return await saveBlob(await res.blob(), parentId)
+    const blob = await res.blob()
+    try { return await saveBlob(blob, parentId) }
+    catch { return saveTemporary(blob, parentId) }
   } catch {
     return { id: uuid(), src: data.url, parentId, createdAt: Date.now() }
   }
 }
+/** Release locally stored artwork once it is no longer referenced. */
+export async function deleteStoredAssets(ids: string[]): Promise<void> {
+  if (!ids.length) return
+  for (const id of ids) {
+    const entry = temporary.get(id)
+    if (entry) { URL.revokeObjectURL(entry.url); temporary.delete(id) }
+  }
+  const database = await db().catch(() => null)
+  if (!database) return
+  await new Promise<void>((resolve, reject) => {
+    const tx = database.transaction(STORE, 'readwrite')
+    for (const id of ids) tx.objectStore(STORE).delete(id)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error)
+  }).finally(() => database.close())
+}
+
 export async function fileFromAsset(asset: AssetRef): Promise<File> {
-  let blob = await getBlob(asset.id)
+  let blob = await getBlob(asset.id).catch(() => undefined)
   if (!blob && asset.src) {
     const res = await fetch(asset.src)
     if (!res.ok) throw new Error(`图片下载失败 (${res.status})`)

@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 12
     env:
       NEW_API_BASE_URL: https://mhapi.net/v1
-      IMAGE_TEST_MODEL: gpt-image-2
+      IMAGE_TEST_MODEL: gpt-image-2.5-flare
       NEW_API_TEST_TOKEN: ${{ secrets.NEW_API_TEST_TOKEN }}
     steps:
       - name: Checkout

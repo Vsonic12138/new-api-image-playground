@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LANGUAGE_OPTIONS, toIntlLocale } from './i18n/resources'
+import { LANGUAGE_OPTIONS, normalizeLanguage, toIntlLocale } from './i18n/resources'
 import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelLeftClose, PanelLeftOpen, X, Menu, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
 import type { AppSettings, AssetRef, Conversation, ImageProgressPhase, Message, WorkMode } from './types'
 import { isImageModel, uuid } from './types'
 import { loadConversations, loadSettings, makeConversation, SESSION_KEY, SETTINGS_KEY } from './lib/conversations'
-import { createImages, editImages, importImage, isMockMode, sendChat } from './api/client'
+import { importImage, isMockMode } from './api/client'
+import { buildChatHistory, executeTask } from './application/execute-task'
 import { ImageView } from './components/ImageView'
 import { ImageLightbox } from './components/ImageLightbox'
 import { EditorModal } from './components/EditorModal'
@@ -13,7 +14,7 @@ import { GenerationProgress } from './components/GenerationProgress'
 import { ConnectionControl } from './components/ConnectionControl'
 import { EmbeddedCredentialControl } from './components/EmbeddedCredentialControl'
 import { runtimeMode } from './api/protocols'
-import { fileFromAsset } from './lib/image-store'
+import { deleteStoredAssets, fileFromAsset } from './lib/image-store'
 
 function truncate(s: string, n = 30) { return s.length > n ? `${s.slice(0, n)}…` : s }
 const modes: { id: WorkMode; label: string; icon: typeof ImageIcon }[] = [
@@ -49,8 +50,24 @@ export default function App() {
   const active = convos.find(c => c.id === activeId) || convos[0]
   const updateModels = useCallback((models: string[]) => setAvailableModels(models), [])
 
+  useEffect(() => {
+    if (runtimeMode !== 'embedded') return
+    const onHostMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== window.parent) return
+      if (event.data?.source !== 'newapi-image-workspace-host') return
+      const message = event.data
+      if (message.themeMode === 'dark' || message.themeMode === 'light') {
+        setTheme(message.themeMode)
+      }
+      if (typeof message.lang === 'string' && message.lang.length <= 32) {
+        void i18n.changeLanguage(normalizeLanguage(message.lang))
+      }
+    }
+    window.addEventListener('message', onHostMessage)
+    return () => window.removeEventListener('message', onHostMessage)
+  }, [i18n])
   useEffect(() => () => window.clearTimeout(handoffTimer.current), [])
-  useEffect(() => { localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
+  useEffect(() => { if (runtimeMode !== 'embedded') localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
   useEffect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) }, [settings])
   useEffect(() => { localStorage.setItem('new-api-image-playground:theme', theme) }, [theme])
   useEffect(() => { localStorage.setItem('new-api-image-playground:sidebar-collapsed', String(sidebarCollapsed)) }, [sidebarCollapsed])
@@ -83,6 +100,11 @@ export default function App() {
     const left = convos.filter(c => c.id !== id)
     if (!left.length) { const next = makeConversation(); setConvos([next]); setActiveId(next.id) }
     else { setConvos(left); if (activeId === id) setActiveId(left[0].id) }
+    // Never delete a shared asset still referenced by another conversation.
+    const retained = new Set(left.flatMap(c => c.messages.flatMap(m => m.images.map(asset => asset.id))))
+    const removed = convos.find(c => c.id === id)
+    const staleIds = [...new Set((removed?.messages || []).flatMap(m => m.images.map(asset => asset.id)))].filter(assetId => !retained.has(assetId))
+    void deleteStoredAssets(staleIds).catch(() => {})
     setInspected(undefined); setSelected(undefined)
   }
   async function handleUpload(file: File) {
@@ -137,32 +159,31 @@ export default function App() {
     const answerId = uuid()
     const pending: Message = { id: answerId, role: 'assistant', mode: actualMode, text: '', images: [], createdAt: Date.now(), status: 'pending', progressPhase: 'preparing' }
     modify(conversationId, c => ({ ...c, title: c.messages.length ? c.title : truncate(cleanPrompt, 24), updatedAt: Date.now(), messages: [...c.messages, input, pending] }))
-    const previous = active.messages
-      .filter(m => m.mode === 'chat' && m.text && m.status !== 'error')
-      .map(m => ({ role: m.role, content: m.text }))
+    const previous = buildChatHistory(active.messages)
     const reportProgress = (phase: ImageProgressPhase) => {
       modify(conversationId, c => ({...c, messages: c.messages.map(m => m.id === answerId ? {...m, progressPhase: phase} : m)}))
     }
     ;(async () => {
       try {
-        let answer = ''
-        let images: AssetRef[] = []
-        let actualProtocol: Message['protocol']
-        let responseId: string | undefined
-        let requestModel = actualMode === 'chat' ? (settings.chatProtocol === 'responses' ? settings.responsesModel : settings.chatModel) : (settings.imageProtocol === 'responses' ? settings.responsesModel : settings.imageModel)
-        if (actualMode === 'generate') {
-          const result = await createImages(cleanPrompt, settings, reportProgress)
-          images = result.images; actualProtocol = result.protocol; responseId = result.responseId
-          answer = result.text || t('generatedCount', {count: images.length})
-        } else if (actualMode === 'edit' && image) {
-          const annotatedPrompt = annotated ? `${cleanPrompt}\n参考图片上含有红色圈选标记，请理解为需要修改的位置，生成图中不要保留标记，其它部分尽可能保持一致。` : cleanPrompt
-          const result = await editImages(annotatedPrompt, image, settings, annotated, reportProgress)
-          images = result.images; actualProtocol = result.protocol; responseId = result.responseId
-          answer = (result.text || t('editedCount', {count: images.length})) + (annotated ? ` ${t('annotationsLimit')}` : '')
-        } else {
-          const result = await sendChat(cleanPrompt, previous, settings, selected)
-          answer = result.text; actualProtocol = result.protocol; responseId = result.responseId
-        }
+        const commandPrompt = actualMode === 'edit' && annotated
+          ? `${cleanPrompt}\n参考图片上含有红色圈选标记，请理解为需要修改的位置，生成图中不要保留标记，其它部分尽可能保持一致。`
+          : cleanPrompt
+        const result = await executeTask({
+          mode: actualMode,
+          prompt: commandPrompt,
+          settings,
+          reference: actualMode === 'edit' ? image : actualMode === 'chat' ? selected : undefined,
+          annotated,
+          history: previous,
+          onProgress: reportProgress,
+        })
+        const { images, protocol: actualProtocol, responseId, requestModel } = result
+        const answer = actualMode === 'generate'
+          ? result.text || t('generatedCount', {count: images.length})
+          : actualMode === 'edit'
+            ? (result.text || t('editedCount', {count: images.length})) + (annotated ? ` ${t('annotationsLimit')}` : '')
+            : result.text || ''
+        if (images.some(asset => asset.volatile)) setNotice(t('temporaryAsset'))
         modify(conversationId, c => ({ ...c, updatedAt: Date.now(), messages: c.messages.map(m => m.id === answerId ? { ...m, text: answer, images, protocol:actualProtocol, requestModel, responseId, status: 'done' as const } : m) }))
         if (images.length) setSelected(images[0])
       } catch (e) {

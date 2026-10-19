@@ -1,9 +1,8 @@
+import { IMAGE_MODELS } from './core/capabilities'
+export { IMAGE_MODELS, isImageModel } from './core/capabilities'
 export type WorkMode = 'generate' | 'edit' | 'chat'
 export type ImageProgressPhase = 'preparing' | 'requesting' | 'saving'
-export const IMAGE_MODELS = ['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'] as const
 export type ImageModel = (typeof IMAGE_MODELS)[number]
-export const isImageModel = (value: string): value is ImageModel =>
-  IMAGE_MODELS.some(model => model === value)
 
 /** Both Chat and Responses can serve text; Images is the direct image-only protocol. */
 export type ApiProtocol = 'auto' | 'chat' | 'responses' | 'images'
@@ -16,6 +15,8 @@ export type AssetRef = {
   src?: string
   name?: string
   parentId?: string
+  /** Browser storage failed; this asset exists in this tab only. */
+  volatile?: boolean
   createdAt: number
   protocol?: ResolvedProtocol
   responseId?: string
