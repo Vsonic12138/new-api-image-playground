@@ -27,6 +27,22 @@ export function endpoint(protocol: ResolvedProtocol, operation?: 'generate' | 'e
   throw new Error('Images requires a generation or edit operation')
 }
 
+export type EmbeddedCredentialSelection =
+  | {mode:'account';group?:string}
+  | {mode:'token';tokenId:number}
+
+/** Ephemeral UI choice only. No API keys or tokens are stored here. */
+let embeddedCredential: EmbeddedCredentialSelection = {mode:'account'}
+export function setEmbeddedCredential(selection: EmbeddedCredentialSelection) {
+  embeddedCredential = selection
+}
+function currentCredentialHeaders():Record<string,string> {
+  if (runtimeMode !== 'embedded') return {}
+  return embeddedCredential.mode === 'token'
+    ? {'X-Playground-Token-ID':String(embeddedCredential.tokenId)}
+    : embeddedCredential.group ? {'X-Playground-Group':embeddedCredential.group} : {}
+}
+
 export class PlaygroundApiError extends Error {
   constructor(message: string, public status: number, public code?: string) { super(message); this.name = 'PlaygroundApiError' }
 }
@@ -46,7 +62,7 @@ export async function parseJSON(res: Response): Promise<any> {
 export async function postJSON(endpointURL: string, payload: unknown): Promise<any> {
   const response = await fetch(endpointURL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...currentCredentialHeaders() },
     credentials: 'same-origin',
     body: JSON.stringify(payload),
   })
@@ -54,7 +70,7 @@ export async function postJSON(endpointURL: string, payload: unknown): Promise<a
 }
 
 export async function postMultipart(endpointURL: string, data: FormData): Promise<any> {
-  const response = await fetch(endpointURL, { method: 'POST', body: data, credentials: 'same-origin' })
+  const response = await fetch(endpointURL, { method: 'POST', body: data, headers:currentCredentialHeaders(), credentials: 'same-origin' })
   return parseJSON(response)
 }
 
