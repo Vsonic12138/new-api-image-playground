@@ -1,6 +1,6 @@
 # Integration plan: Vsonic12138/new-api
 
-> 双部署入口、用户 Token ID 安全选择、分组绑定和两款 GPT Image 2.5 图片模型约束见 [ADR-002](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md)。嵌入式和独立部署共用核心，Key 永不下发给嵌入式前端。
+> 双部署入口、用户 Token ID 安全选择、分组绑定和两款 GPT Image 2.5 生图/修图模型约束（不限制 LLM/VLM 聊天与图片理解模型）见 [ADR-002](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md)。嵌入式和独立部署共用核心，Key 永不下发给嵌入式前端。
 
 
 > 云端作品库、管理员保留期限、到期通知和定时清理的详细实施规范见 [CLOUD_GALLERY_RETENTION.zh-CN.md](CLOUD_GALLERY_RETENTION.zh-CN.md)。**该功能尚未上线。**
