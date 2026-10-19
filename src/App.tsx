@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGE_OPTIONS, toIntlLocale } from './i18n/resources'
-import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelRightClose, X, Menu, History, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
+import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelLeftClose, PanelLeftOpen, X, Menu, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
 import type { AppSettings, AssetRef, Conversation, Message, WorkMode } from './types'
 import { uuid } from './types'
 import { loadConversations, loadSettings, makeConversation, SESSION_KEY, SETTINGS_KEY } from './lib/conversations'
 import { createImages, editImages, importImage, isMockMode, sendChat } from './api/client'
 import { ImageView } from './components/ImageView'
+import { ImageLightbox } from './components/ImageLightbox'
 import { EditorModal } from './components/EditorModal'
 import { fileFromAsset } from './lib/image-store'
 
@@ -30,6 +31,7 @@ export default function App() {
   const [editorTarget, setEditorTarget] = useState<AssetRef | undefined>()
   const [showSettings, setShowSettings] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('new-api-image-playground:sidebar-collapsed') === 'true')
   const [theme, setTheme] = useState<'light'|'dark'>(() => localStorage.getItem('new-api-image-playground:theme') === 'dark' ? 'dark' : 'light')
   const [search, setSearch] = useState('')
   const [notice, setNotice] = useState('')
@@ -41,12 +43,12 @@ export default function App() {
   useEffect(() => { localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
   useEffect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) }, [settings])
   useEffect(() => { localStorage.setItem('new-api-image-playground:theme', theme) }, [theme])
+  useEffect(() => { localStorage.setItem('new-api-image-playground:sidebar-collapsed', String(sidebarCollapsed)) }, [sidebarCollapsed])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [activeId, active?.messages.length])
   useEffect(() => { if (notice) { const timer = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(timer) } }, [notice])
 
   const allImages = useMemo(() => (active?.messages || []).flatMap(m => m.images).reverse(), [active])
   const currentImage = selected || allImages[0]
-  const inspectedIndex = inspected ? allImages.findIndex(i => i.id === inspected.id) : -1
 
   function modify(id: string, updater: (c: Conversation) => Conversation) {
     setConvos(old => old.map(c => c.id === id ? updater(c) : c))
@@ -108,7 +110,7 @@ export default function App() {
           answer = t('editedCount', {count: images.length}) + (annotated ? ` ${t('annotationsLimit')}` : '')
         } else answer = await sendChat(cleanPrompt, previous, settings)
         modify(conversationId, c => ({ ...c, updatedAt: Date.now(), messages: c.messages.map(m => m.id === answerId ? { ...m, text: answer, images, status: 'done' as const } : m) }))
-        if (images.length) { setSelected(images[0]); setInspected(images[0]) }
+        if (images.length) setSelected(images[0])
       } catch (e) {
         const message = e instanceof Error ? e.message : '未知错误'
         modify(conversationId, c => ({ ...c, messages: c.messages.map(m => m.id === answerId ? { ...m, text: t('requestFailed', {message}), status: 'error' as const } : m) }))
@@ -116,11 +118,11 @@ export default function App() {
     })()
   }
 
-  return <div className={`app-shell ${theme === 'dark' ? 'theme-dark' : ''}`}>
+  return <div className={`app-shell ${theme === 'dark' ? 'theme-dark' : ''} ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
     <aside className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}>
       <div className="brand"><div className="brand-icon"><Sparkles size={19}/></div><div>{t('brand')}</div></div>
-      <button className="new-chat-button" onClick={newChat}><Plus size={19}/>{t('newChat')} <kbd>⌘ K</kbd></button>
-      <nav className="primary-nav"><button className="nav-active"><MessageCircle size={18}/>{t('createSpace')}</button><button onClick={() => setInspected(allImages[0])}><ImageIcon size={18}/>{t('myWorks')}</button><button onClick={() => setShowSettings(true)}><Settings2 size={18}/>{t('settingsModels')}</button></nav>
+      <button className="new-chat-button" onClick={newChat}><Plus size={19}/>{t('newChat')}</button>
+      <nav className="primary-nav"><button className="nav-active"><MessageCircle size={18}/>{t('createSpace')}</button><button onClick={() => { if (allImages[0]) setInspected(allImages[0]); else setNotice(t('clickImage')) }}><ImageIcon size={18}/>{t('myWorks')}</button><button onClick={() => setShowSettings(true)}><Settings2 size={18}/>{t('settingsModels')}</button></nav>
       <div className="history-header"><span>{t('recentChats')}</span><button onClick={newChat} title="新建"><Plus size={16}/></button></div>
       <label className="search-bar"><Search size={14}/><input placeholder={t('searchChats')} value={search} onChange={e => setSearch(e.target.value)}/></label>
       <div className="history-list">{convos.filter(c => c.title.toLowerCase().includes(search.toLowerCase())).sort((a, b) => b.updatedAt - a.updatedAt).map(c => <div className={`history-item ${active?.id === c.id ? 'selected' : ''}`} key={c.id}>
@@ -129,9 +131,13 @@ export default function App() {
       </div>)}</div>
       <div className="sidebar-footer"><div className="footer-avatar">P</div><div><strong>{t('independentPreview')}</strong><small>{t('integratesLater')}</small></div></div>
     </aside>
+    {sidebarOpen && <button type="button" className="sidebar-scrim" aria-label={t('closeSidebar')} onClick={() => setSidebarOpen(false)}/>}
     <div className="workspace">
-      <header className="topbar"><div className="top-left"><button className="mobile-menu icon-button" onClick={() => setSidebarOpen(v => !v)}><Menu size={20}/></button><div className="model-pill"><div className="model-emoji"><WandSparkles size={17}/></div><span>{settings.imageModel}</span><ChevronDown size={14}/></div></div>
-        <div className="top-modes">{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} onClick={() => setMode(m.id)}><m.icon size={17}/>{t(m.id)}</button>)}</div>
+      <header className="topbar"><div className="top-left">
+        <button className="mobile-menu icon-button" onClick={() => setSidebarOpen(v => !v)} aria-label={t('openSidebar')}><Menu size={20}/></button>
+        <button className="sidebar-toggle icon-button" onClick={() => setSidebarCollapsed(v => !v)} title={t(sidebarCollapsed ? 'expandSidebar' : 'collapseSidebar')} aria-label={t(sidebarCollapsed ? 'expandSidebar' : 'collapseSidebar')}>{sidebarCollapsed ? <PanelLeftOpen size={19}/> : <PanelLeftClose size={19}/>}</button>
+        <button className="model-pill" onClick={() => setShowSettings(true)} title={t('settingsModels')}><div className="model-emoji"><WandSparkles size={17}/></div><span>{settings.imageModel}</span><ChevronDown className="model-chevron" size={14}/></button>
+      </div>
         <div className="top-right"><span className={`mode-badge ${isMockMode ? 'mock' : 'real'}`}>{isMockMode ? t('demoMode') : t('liveMode')}</span><select className="language-select" aria-label="Language" value={i18n.resolvedLanguage || i18n.language} onChange={e => { void i18n.changeLanguage(e.target.value) }}>{LANGUAGE_OPTIONS.map(lang => <option key={lang.code} value={lang.code}>{lang.label}</option>)}</select><button className="icon-button theme-switch" title={theme === 'dark' ? 'Light' : 'Dark'} aria-label="Toggle theme" onClick={() => setTheme(v => v === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={17}/> : <Moon size={17}/>}</button><button className="icon-button" title={t('settings')} onClick={() => setShowSettings(true)}><Settings2 size={19}/></button><span className="user-bubble">P</span></div>
       </header>
       <div className="workspace-inner"><main className="chat-section"><div className="chat-scroll"><div className="conversation-stream">
@@ -139,22 +145,18 @@ export default function App() {
         {active?.messages.map(message => <div key={message.id} className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}>
           {message.role === 'assistant' && <div className="assistant-avatar"><Sparkles size={17}/></div>}
           <div className="message-inner"><div className="message-time">{time(message.createdAt)} · {t(message.mode)}</div>
-            {message.role === 'user' ? <div className="user-bubble-text">{message.text}</div> : message.status === 'pending' ? <div className="pending-answer"><LoaderCircle className="spin" size={17}/> {message.mode === 'generate' ? t('generating') : message.mode === 'edit' ? t('editing') : t('responding')}</div> : <div className={`assistant-text ${message.status === 'error' ? 'error-text' : ''}`}>{message.text}</div>}
+            {message.role === 'user' ? <div className="user-bubble-text">{message.text}</div> : message.status === 'pending' ? <div className="pending-answer" role="status" aria-live="polite"><div className="pending-orbit"><Sparkles size={17}/></div><span>{message.mode === 'generate' ? t('generating') : message.mode === 'edit' ? t('editing') : t('responding')}</span><span className="pending-dots" aria-hidden="true"><i/><i/><i/></span></div> : <div className={`assistant-text ${message.status === 'error' ? 'error-text' : ''}`}>{message.text}</div>}
             {message.images.length > 0 && <div className={`result-images ${message.role === 'user' ? 'user-images' : ''}`}>{message.images.map(image => <div key={image.id} className="result-image-item"><ImageView asset={image} onClick={() => { setInspected(image); setSelected(image) }}/>
               {message.role === 'assistant' && <div className="image-actions"><button onClick={() => openEditor(image)} title={t('continueEdit')}><Pencil size={16}/>{t('continueEdit')}</button><button onClick={() => { const previousPrompt = [...active.messages].filter(m => m.role === 'user' && m.createdAt <= message.createdAt).at(-1)?.text; if (previousPrompt) submit(previousPrompt, 'generate') }} title={t('regenerate')}><RefreshCw size={16}/>{t('regenerate')}</button><button onClick={() => download(image)} title={t('download')}><Download size={16}/></button></div>}
             </div>)}</div>}
           </div></div>)}<div ref={bottomRef}/>
       </div></div>
       <div className="composer-area"><div className="composer"><div className="composer-tabs">{modes.map(m => <button key={m.id} className={mode === m.id ? 'active' : ''} onClick={() => setMode(m.id)}><m.icon size={15}/>{t(m.id)}</button>)}</div>
-        <textarea rows={2} placeholder={mode === 'generate' ? t('generatePlaceholder') : mode === 'edit' ? t('editPlaceholder') : t('chatPlaceholder')} value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit() } }}/>
-        <div className="composer-bottom"><div className="composer-left"><input ref={uploadRef} className="hidden-input" type="file" accept="image/*" onChange={e => { const file = e.target.files?.[0]; if (file) void handleUpload(file); e.target.value = '' }}/><button className="secondary-button" onClick={() => uploadRef.current?.click()}><Paperclip size={16}/>{t('upload')}</button>{selected && <div className="picked-image"><ImageView asset={selected}/><span>{t('selectedReference')}</span><button title={t('removeReference')} onClick={() => setSelected(undefined)}><X size={13}/></button></div>}</div><div className="composer-right"><button className="icon-button" title={t('generationParams')} onClick={() => setShowSettings(true)}><Settings2 size={18}/></button><button className="primary-button send-button" disabled={!text.trim() || busy} onClick={() => submit()}><Send size={16}/>{t('send')}</button></div></div>
+        <textarea rows={2} aria-label={mode === 'generate' ? t('generatePlaceholder') : mode === 'edit' ? t('editPlaceholder') : t('chatPlaceholder')} placeholder={mode === 'generate' ? t('generatePlaceholder') : mode === 'edit' ? t('editPlaceholder') : t('chatPlaceholder'} value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit() } }}/>
+        <div className="composer-bottom"><div className="composer-left"><input ref={uploadRef} className="hidden-input" type="file" accept="image/*" onChange={e => { const file = e.target.files?.[0]; if (file) void handleUpload(file); e.target.value = '' }}/><button className="secondary-button" onClick={() => uploadRef.current?.click()}><Paperclip size={16}/>{t('upload')}</button>{selected && <div className="picked-image"><ImageView asset={selected}/><span>{t('selectedReference')}</span><button title={t('removeReference')} onClick={() => setSelected(undefined)}><X size={13}/></button></div>}</div><div className="composer-right"><button className="icon-button" title={t('generationParams')} onClick={() => setShowSettings(true)}><Settings2 size={18}/></button><button className="primary-button send-button" disabled={!text.trim() || busy} onClick={() => submit()} aria-label={t('send')}>{busy ? <LoaderCircle className="spin" size={16}/> : <Send size={16}/>}<span>{t('send')}</span></button></div></div>
       </div><div className="composer-tip">{isMockMode ? t('mockTip') : t('relayTip')}</div></div>
     </main>
-    <aside className="inspector"><div className="inspector-header"><strong>{t('imageDetail')}</strong><button className="icon-button" onClick={() => setInspected(undefined)} title="清除选中"><PanelRightClose size={18}/></button></div>
-      {inspected ? <div className="inspector-body"><ImageView asset={inspected} className="inspector-hero"/><h4>{t('currentImage')}</h4><div className="asset-metadata"><div><span>{t('imageId')}</span><span className="mono">{truncate(inspected.id, 15)}</span></div><div><span>{t('imageModel')}</span><span>{settings.imageModel}</span></div><div><span>{t('imageOperation')}</span><span>{inspected.parentId ? t('byEditing') : t('byGeneration')}</span></div><div><span>{t('createdTime')}</span><span>{time(inspected.createdAt)}</span></div></div><div className="inspector-buttons"><button onClick={() => openEditor(inspected)}><Pencil size={15}/>{t('continueEdit')}</button><button onClick={() => download(inspected)}><Download size={15}/>{t('download')}</button></div>
-      {inspectedIndex >= 0 && <p className="inspector-hint"><Check size={14}/>{t('currentEditingReference')}</p>}</div> : <div className="inspector-blank"><ImageIcon size={24}/><p>{t('clickImage')}</p></div>}
-      {allImages.length > 0 && <div className="inspector-history"><div className="section-title"><History size={16}/>{t('imageHistory')}<span>{t('imageCount', {count: allImages.length})}</span></div><div className="history-gallery">{allImages.map(image => <ImageView key={image.id} asset={image} className={inspected?.id === image.id ? 'active' : ''} onClick={() => { setInspected(image); setSelected(image) }}/>)}</div></div>}
-    </aside></div>
+    </div>
     </div>
     {showSettings && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowSettings(false) }}><div className="settings-modal" role="dialog" aria-modal="true"><div className="settings-head"><h2>{t('settingsTitle')}</h2><button className="icon-button" onClick={() => setShowSettings(false)}><X size={20}/></button></div><p className="muted">{t('settingsDesc')}</p>
       <label>{t('imageModel')}<input value={settings.imageModel} onChange={e => setSettings(s => ({ ...s, imageModel: e.target.value }))}/></label>
@@ -163,6 +165,7 @@ export default function App() {
       <label>{t('imageNumber')}<select value={settings.count} onChange={e => setSettings(s => ({ ...s, count: Number(e.target.value) }))}><option value={1}>1 张</option><option value={2}>2 张</option><option value={3}>3 张</option><option value={4}>4 张</option></select></label>
       <div className="notice-box"><Info size={16}/><div>{t('upstreamCompatibilityNote')}</div></div>
       <button className="primary-button settings-done" onClick={() => setShowSettings(false)}><Check size={16}/>{t('saveSettings')}</button></div></div>}
+    {inspected && <ImageLightbox image={inspected} images={allImages} imageModel={settings.imageModel} onClose={() => setInspected(undefined)} onSelect={image => { setInspected(image); setSelected(image) }} onEdit={image => { setInspected(undefined); openEditor(image) }} onDownload={image => { void download(image) }}/>}
     {editorTarget && <EditorModal asset={editorTarget} onClose={() => setEditorTarget(undefined)} onSubmit={(prompt, annotated) => submit(prompt, 'edit', annotated, editorTarget)}/>}
     {notice && <div className="toast"><Info size={16}/>{notice}<button onClick={() => setNotice('')}><X size={14}/></button></div>}
   </div>
