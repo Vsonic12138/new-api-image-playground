@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, uuid } from '../types'
 export const SESSION_KEY = 'new-api-image-playground:v1:sessions'
 export const SETTINGS_KEY = 'new-api-image-playground:v1:settings'
 export function makeConversation(): Conversation {
-  return { id: uuid(), title: '新对话', messages: [], createdAt: Date.now(), updatedAt: Date.now() }
+  return { id: uuid(), title: i18n.t('newChat', {ns:'imagePlayground'}), messages: [], createdAt: Date.now(), updatedAt: Date.now() }
 }
 function example(): Conversation {
   const now = Date.now()
