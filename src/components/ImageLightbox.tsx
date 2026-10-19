@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { ChevronLeft, ChevronRight, Download, Pencil, Sparkles, X } from 'lucide-react'
 import type { AssetRef } from '../types'
 import { ImageView } from './ImageView'
+import { toIntlLocale } from '../i18n/resources'
 
 type Props = {
   image: AssetRef
@@ -17,6 +18,7 @@ type Props = {
 export function ImageLightbox({ image, images, imageModel, onClose, onSelect, onEdit, onDownload }: Props) {
   const { t, i18n } = useTranslation('imagePlayground')
   const closeButton = useRef<HTMLButtonElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
   const currentIndex = images.findIndex(item => item.id === image.id)
   const safeIndex = Math.max(0, currentIndex)
   const hasMultiple = images.length > 1
@@ -33,6 +35,15 @@ export function ImageLightbox({ image, images, imageModel, onClose, onSelect, on
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') {
+        const focusable = dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]')
+        if (focusable?.length) {
+          const first = focusable[0]
+          const last = focusable[focusable.length - 1]
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+        }
+      }
       if (event.key === 'Escape') { event.preventDefault(); onClose() }
       if (event.key === 'ArrowLeft' && hasMultiple) {
         event.preventDefault()
@@ -48,7 +59,7 @@ export function ImageLightbox({ image, images, imageModel, onClose, onSelect, on
   })
 
   return <div className="preview-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
-    <div className="preview-dialog" role="dialog" aria-modal="true" aria-label={t('imageDetail')}>
+    <div ref={dialogRef} className="preview-dialog" role="dialog" aria-modal="true" aria-label={t('imageDetail')}>
       <header className="preview-header">
         <div className="preview-heading"><Sparkles size={18}/><strong>{t('imageDetail')}</strong><span>{t('imagePosition', { index: safeIndex + 1, total: images.length })}</span></div>
         <button ref={closeButton} type="button" className="preview-icon-button" onClick={onClose} aria-label={t('closePreview')} title={t('closePreview')}><X size={20}/></button>
@@ -66,7 +77,7 @@ export function ImageLightbox({ image, images, imageModel, onClose, onSelect, on
           </div>
           <div className="preview-meta">
             <div><span>{t('imageModel')}</span><strong>{imageModel}</strong></div>
-            <div><span>{t('createdTime')}</span><strong>{new Date(image.createdAt).toLocaleString(i18n.resolvedLanguage === 'zhCN' ? 'zh-CN' : undefined)}</strong></div>
+            <div><span>{t('createdTime')}</span><strong>{new Date(image.createdAt).toLocaleString(toIntlLocale(i18n.resolvedLanguage || i18n.language))}</strong></div>
           </div>
           <div className="preview-actions">
             <button type="button" className="primary-button" onClick={() => onEdit(image)}><Pencil size={17}/>{t('continueEdit')}</button>
