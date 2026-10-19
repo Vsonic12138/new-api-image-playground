@@ -1,6 +1,6 @@
 # 双协议图文 Playground：设计与实施清单（2026-10）
 
-> **落地约束更新：** 本方案受 [ADR-002 双部署与 GPT Image 2.5 限定](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md) 约束：只开放 Flare/Sunburst 两款图片模型；Standalone 与 Embedded 共享核心，NewAPI 按用户自己创建的 Token ID 选择并验证 Group。仅有这两个图片模型时不能假定标准 Responses 的 image tool 或 Chat 图片输出可用。
+> **落地约束更新：** 本方案受 [ADR-002 双部署与 GPT Image 2.5 限定](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md) 约束：生图/修图只允许 Flare/Sunburst 两款模型；LLM/VLM 文本和视觉理解模型没有这项限制，从用户有权使用的模型目录选择。Standalone 与 Embedded 共享核心，NewAPI 按用户自己的 Token ID/Group 验证权限。Responses 图片工具可用性须验证主 LLM 的工具能力，Chat 生图需实际供应商扩展支持。
 
 
 > **架构决策更新：** 首先参考 [ADR-001：协议复用与清晰分层架构](PROTOCOL_REUSE_ARCHITECTURE.zh-CN.md)。NewAPI 已经包含 Chat ↔ Responses 转换、图片 Relay、SSE Hook 及相关第三方依赖，下面的模块列表是**抽象职责**，不是必须创建一套新的协议栈。正式集成必须复用既有 Relay / 计费和登录态。
@@ -70,10 +70,10 @@ type UserPreference = 'auto' | 'chat' | 'responses' | 'images'
 ```
 
 **模型字段不要混淆**：
-- `chatModel`：Chat Completions 普通聊天；若要经 Chat 生图，需另有支持图片输出的 `chatImageModel`/能力模板。
-- `responsesModel`：Responses 主模型（调用工具），必须支持 `image_generation`。
-- `imageToolModel`：Responses image tool 的模型（例如 NewAPI 给 `gpt-image-2.5-sunburst` 配置的别名）；不是顶层主模型。
-- `imagesModel`：直接 Images API 的图片模型（不必与 Chat 或 Responses 的名称一致）。
+- `chatModel`：从中转已配置、当前用户可用的 **LLM/VLM** 中选择，支持普通对话和图像理解；Chat 图片输出需另外经验证的兼容扩展模型/能力模板。
+- `responsesModel`：从中转已配置的 **LLM/VLM** 中选；纯文本 Responses 只需支持相应 Responses 协议，**只有 Responses 生图/修图才要求此主模型支持 `image_generation` 工具**。
+- `imageToolModel`：Responses `image_generation` 工具的生图模型，只能是 `gpt-image-2.5-flare` 或 `gpt-image-2.5-sunburst`（或管理员验证映射的别名）；不是顶层主模型。
+- `imagesModel`：直接 Images API 的图片模型，也只允许 Flare/Sunburst；可与工具模型分别选择。
 
 预置应当由 NewAPI 管理员下发支持清单和默认值；用户可以在已验证且已授权的选项之间切换，默认不允许任意提供第三方 Base URL 或 token。
 
