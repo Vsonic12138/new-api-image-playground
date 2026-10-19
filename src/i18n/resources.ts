@@ -304,6 +304,76 @@ for (const [lang, phrases] of Object.entries(interactionText)) {
   Object.assign(imagePlaygroundTranslations[lang], phrases)
 }
 
+// Additional controls for local-first editing, request stages and accessible feedback.
+const editingExperienceText: Record<string, Record<string,string>> = {
+  zhCN: {
+    progressPreparing:'准备图片请求',progressGenerating:'等待模型生成',progressEditing:'等待模型编辑',
+    progressSavingLocal:'整理并保存结果',progressEstimateDisclaimer:'正在处理，请稍候',
+    progressElapsed:'已等待 {{time}}',progressNoPercentage:'仅显示实际处理阶段；上游接口暂不提供百分比进度。',
+    annotationTools:'图片标注工具',annotationCount:'{{count}} 处标注',brushSize:'画笔粗细',
+    penFeedback:'在图片上拖动绘制标记，可随时撤销（Ctrl+Z）。',
+    rectFeedback:'拖动创建矩形选区；当前为视觉标注，并非精确 Mask。',
+    preparingEdit:'正在准备编辑…',backToPreview:'返回图片预览'
+  },
+  en: {
+    progressPreparing:'Preparing request',progressGenerating:'Waiting for image generation',progressEditing:'Waiting for image editing',
+    progressSavingLocal:'Processing and saving result',progressEstimateDisclaimer:'Working on your image…',
+    progressElapsed:'Elapsed {{time}}',progressNoPercentage:'These are actual processing stages; the provider does not report a percentage.',
+    annotationTools:'Image annotation tools',annotationCount:'{{count}} annotations',brushSize:'Brush size',
+    penFeedback:'Drag to mark the image. Undo anytime (Ctrl+Z).',
+    rectFeedback:'Drag to select a rectangle. This is guidance, not a precise mask.',
+    preparingEdit:'Preparing edit…',backToPreview:'Back to image preview'
+  },
+  zhTW: {
+    progressPreparing:'準備圖片請求',progressGenerating:'等待模型生成',progressEditing:'等待模型編輯',
+    progressSavingLocal:'整理並保存結果',progressEstimateDisclaimer:'正在處理，請稍候',
+    progressElapsed:'已等待 {{time}}',progressNoPercentage:'只顯示實際處理階段；上游接口沒有百分比進度。',
+    annotationTools:'圖片標註工具',annotationCount:'{{count}} 處標註',brushSize:'畫筆粗細',
+    penFeedback:'在圖片拖動繪製標記，可隨時復原 (Ctrl+Z)。',
+    rectFeedback:'拖動建立矩形區域；這是視覺標註，不是精確遮罩。',
+    preparingEdit:'正在準備編輯…',backToPreview:'返回圖片預覽'
+  },
+  ja: {
+    progressPreparing:'リクエストの準備中',progressGenerating:'画像の生成待ち',progressEditing:'画像の編集待ち',
+    progressSavingLocal:'結果を処理・保存中',progressEstimateDisclaimer:'処理しています…',
+    progressElapsed:'経過 {{time}}',progressNoPercentage:'実際の処理段階を表示しています。進捗率は取得できません。',
+    annotationTools:'画像注釈ツール',annotationCount:'{{count}} 件の注釈',brushSize:'ペンの太さ',
+    penFeedback:'ドラッグして描画します。Ctrl+Z で取り消せます。',
+    rectFeedback:'ドラッグして四角形を描きます。正確なマスクではありません。',
+    preparingEdit:'編集の準備中…',backToPreview:'画像プレビューに戻る'
+  },
+  fr: {
+    progressPreparing:'Préparation de la requête',progressGenerating:'Génération en cours',progressEditing:'Retouche en cours',
+    progressSavingLocal:'Traitement et sauvegarde',progressEstimateDisclaimer:'Traitement de votre image…',
+    progressElapsed:'Temps écoulé : {{time}}',progressNoPercentage:'Étapes réelles affichées ; le fournisseur ne donne pas de pourcentage.',
+    annotationTools:'Outils d’annotation',annotationCount:'{{count}} annotations',brushSize:'Taille du pinceau',
+    penFeedback:'Glissez pour annoter. Annulez avec Ctrl+Z.',
+    rectFeedback:'Glissez pour dessiner un rectangle. Ce n’est pas un masque précis.',
+    preparingEdit:'Préparation de l’édition…',backToPreview:'Retour à l’aperçu'
+  },
+  ru: {
+    progressPreparing:'Подготовка запроса',progressGenerating:'Ожидание генерации',progressEditing:'Ожидание редактирования',
+    progressSavingLocal:'Обработка и сохранение результата',progressEstimateDisclaimer:'Обработка изображения…',
+    progressElapsed:'Прошло {{time}}',progressNoPercentage:'Показаны реальные этапы; процент выполнения не передается.',
+    annotationTools:'Инструменты разметки',annotationCount:'Пометок: {{count}}',brushSize:'Толщина кисти',
+    penFeedback:'Проведите по изображению. Отмена — Ctrl+Z.',
+    rectFeedback:'Выделите прямоугольник. Это подсказка, а не точная маска.',
+    preparingEdit:'Подготовка правки…',backToPreview:'Назад к просмотру'
+  },
+  vi: {
+    progressPreparing:'Chuẩn bị yêu cầu',progressGenerating:'Đang chờ tạo ảnh',progressEditing:'Đang chờ chỉnh sửa ảnh',
+    progressSavingLocal:'Xử lý và lưu kết quả',progressEstimateDisclaimer:'Đang xử lý ảnh…',
+    progressElapsed:'Đã chờ {{time}}',progressNoPercentage:'Hiển thị các giai đoạn thực tế; nhà cung cấp không có phần trăm tiến độ.',
+    annotationTools:'Công cụ đánh dấu ảnh',annotationCount:'{{count}} dấu đánh',brushSize:'Độ dày bút',
+    penFeedback:'Kéo để vẽ đánh dấu. Ctrl+Z để hoàn tác.',
+    rectFeedback:'Kéo để tạo hình chữ nhật. Đây không phải mặt nạ chính xác.',
+    preparingEdit:'Đang chuẩn bị chỉnh sửa…',backToPreview:'Quay lại xem ảnh'
+  },
+}
+for (const [lang, phrases] of Object.entries(editingExperienceText)) {
+  Object.assign(imagePlaygroundTranslations[lang], phrases)
+}
+
 export const imagePlaygroundResources = Object.fromEntries(
   Object.entries(imagePlaygroundTranslations).map(([lng,dict]) => [lng,{imagePlayground:dict}])
 )
