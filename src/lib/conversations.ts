@@ -1,6 +1,6 @@
 import i18n from 'i18next'
 import type { AppSettings, Conversation } from '../types'
-import { DEFAULT_SETTINGS, uuid } from '../types'
+import { DEFAULT_SETTINGS, isImageModel, uuid } from '../types'
 export const SESSION_KEY = 'new-api-image-playground:v1:sessions'
 export const SETTINGS_KEY = 'new-api-image-playground:v1:settings'
 export function makeConversation(): Conversation {
@@ -32,6 +32,15 @@ export function loadConversations(): Conversation[] {
   } catch { return [example()] }
 }
 export function loadSettings(): AppSettings {
-  try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') } }
-  catch { return DEFAULT_SETTINGS }
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')
+    // Previous mock used gpt-image-1; migrate to the two enabled GPT Image 2.5 models.
+    return {
+      ...DEFAULT_SETTINGS,
+      ...saved,
+      imageModel: typeof saved.imageModel === 'string' && isImageModel(saved.imageModel)
+        ? saved.imageModel
+        : DEFAULT_SETTINGS.imageModel,
+    }
+  } catch { return DEFAULT_SETTINGS }
 }
