@@ -14,7 +14,7 @@ import { GenerationProgress } from './components/GenerationProgress'
 import { ConnectionControl } from './components/ConnectionControl'
 import { EmbeddedCredentialControl } from './components/EmbeddedCredentialControl'
 import { runtimeMode } from './api/protocols'
-import { fileFromAsset } from './lib/image-store'
+import { deleteStoredAssets, fileFromAsset } from './lib/image-store'
 
 function truncate(s: string, n = 30) { return s.length > n ? `${s.slice(0, n)}…` : s }
 const modes: { id: WorkMode; label: string; icon: typeof ImageIcon }[] = [
@@ -84,6 +84,11 @@ export default function App() {
     const left = convos.filter(c => c.id !== id)
     if (!left.length) { const next = makeConversation(); setConvos([next]); setActiveId(next.id) }
     else { setConvos(left); if (activeId === id) setActiveId(left[0].id) }
+    // Never delete a shared asset still referenced by another conversation.
+    const retained = new Set(left.flatMap(c => c.messages.flatMap(m => m.images.map(asset => asset.id))))
+    const removed = convos.find(c => c.id === id)
+    const staleIds = [...new Set((removed?.messages || []).flatMap(m => m.images.map(asset => asset.id)))].filter(assetId => !retained.has(assetId))
+    void deleteStoredAssets(staleIds).catch(() => {})
     setInspected(undefined); setSelected(undefined)
   }
   async function handleUpload(file: File) {

@@ -18,6 +18,8 @@ const isProduction = NODE_ENV === 'production'
 const MAX_REQUEST_BYTES = 24 * 1024 * 1024
 const SESSION_TTL = 4 * 60 * 60 * 1000
 const sessionMap = new Map()
+const IMAGE_MODELS = new Set(['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'])
+const MAX_SESSIONS = 512
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../dist')
 
 if (!BASE) throw new Error('Set UPSTREAM_API_BASE_URL to the fixed, trusted NewAPI site URL.')
@@ -100,6 +102,37 @@ async function upstreamRequest(endpoint, token, opts = {}) {
     clearTimeout(timeout)
   }
 }
+// Validate on the trusted server, not only in the React dropdown.
+// Chat/Responses mainline LLMs and VLMs are intentionally unrestricted here.
+async function imageModelError(endpoint, body, contentType) {
+  if (!['/v1/images/generations', '/v1/images/edits', '/v1/responses'].includes(endpoint)) return null
+  let payload
+  try {
+    if (endpoint === '/v1/images/edits') {
+      if (!contentType?.startsWith('multipart/form-data')) return 'Image editing requires multipart/form-data'
+      const request = new Request('http://localhost/internal', {
+        method: 'POST', headers: { 'Content-Type': contentType }, body,
+      })
+      payload = await request.formData()
+    } else {
+      if (!contentType?.startsWith('application/json')) return 'This endpoint requires application/json'
+      payload = JSON.parse(body.toString('utf8'))
+    }
+  } catch { return 'Malformed image or Responses request' }
+  if (endpoint === '/v1/images/generations' || endpoint === '/v1/images/edits') {
+    const model = endpoint === '/v1/images/edits' ? payload.get('model') : payload?.model
+    return IMAGE_MODELS.has(model) ? null : 'Image model not allowed in this workspace'
+  }
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return 'Invalid Responses request'
+  if (payload.tools !== undefined && !Array.isArray(payload.tools)) return 'Invalid Responses tools'
+  for (const tool of payload.tools || []) {
+    if (tool?.type === 'image_generation' && !IMAGE_MODELS.has(tool.model)) {
+      return 'Responses image tool model not allowed in this workspace'
+    }
+  }
+  return null
+}
+
 async function proxy(req, res, endpoint, token) {
   const allowed = endpoint === '/v1/models' ? req.method === 'GET' : req.method === 'POST'
   if (!allowed || !allowedEndpoints.has(endpoint)) return reply(res, 404, {error:{message:'Unknown API endpoint'}})
@@ -109,6 +142,8 @@ async function proxy(req, res, endpoint, token) {
   // cannot become unbounded public proxy traffic.
   const body = req.method === 'POST' ? await readLimited(req, MAX_REQUEST_BYTES) : undefined
   const contentType = typeof req.headers['content-type'] === 'string' ? req.headers['content-type'] : undefined
+  const validationError = await imageModelError(endpoint, body, contentType)
+  if (validationError) return reply(res, 400, {error:{message:validationError}})
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 240000)
   res.on('close', () => { if (!res.writableEnded) controller.abort() })
@@ -182,6 +217,9 @@ const server = http.createServer(async (req, res) => {
         // Verify the user-supplied token without ever exposing or persisting its plaintext.
         const probe = await upstreamRequest('/v1/models',token,{timeout:12000})
         if (!probe.ok) return reply(res,401,{error:{message:'NewAPI rejected this token, or model listing is unavailable'}})
+        // Bound retained secrets: limit simultaneously connected BYOK sessions.
+        for (const [sessionID, entry] of sessionMap) if (entry.expires < Date.now()) sessionMap.delete(sessionID)
+        if (sessionMap.size >= MAX_SESSIONS) return reply(res,503,{error:{message:'Too many active connections'}})
         const id = randomBytes(32).toString('base64url')
         const expires = Date.now()+SESSION_TTL
         sessionMap.set(id,{token,expires})

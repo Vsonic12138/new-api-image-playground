@@ -385,6 +385,17 @@ const interruptedRequestText: Record<string, string> = {
 }
 for (const [lang, message] of Object.entries(interruptedRequestText)) imagePlaygroundTranslations[lang].requestInterrupted = message
 
+const temporaryAssetText: Record<string, string> = {
+  zhCN: '图片已生成，但浏览器存储不可用；请立即下载，此图片仅在当前标签页有效。',
+  en: 'Image generated, but browser storage is unavailable. Download it now; this copy lasts only for this tab.',
+  zhTW: '圖片已生成，但瀏覽器儲存不可用；請立即下載，此圖片僅在目前分頁有效。',
+  ja: '画像は生成されましたが、ブラウザに保存できません。タブを閉じる前にダウンロードしてください。',
+  fr: 'Image générée mais non enregistrée. Téléchargez-la avant de fermer cet onglet.',
+  ru: 'Изображение создано, но не сохранено. Скачайте его до закрытия вкладки.',
+  vi: 'Ảnh đã được tạo nhưng không thể lưu. Hãy tải xuống trước khi đóng tab.',
+}
+for (const [lang, message] of Object.entries(temporaryAssetText)) imagePlaygroundTranslations[lang].temporaryAsset = message
+
 export const imagePlaygroundResources = Object.fromEntries(
   Object.entries(imagePlaygroundTranslations).map(([lng,dict]) => [lng,{imagePlayground:dict}])
 )
