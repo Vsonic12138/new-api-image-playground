@@ -1,5 +1,7 @@
 # 双协议图文 Playground：设计与实施清单（2026-10）
 
+> **架构决策更新：** 首先参考 [ADR-001：协议复用与清晰分层架构](PROTOCOL_REUSE_ARCHITECTURE.zh-CN.md)。NewAPI 已经包含 Chat ↔ Responses 转换、图片 Relay、SSE Hook 及相关第三方依赖，下面的模块列表是**抽象职责**，不是必须创建一套新的协议栈。正式集成必须复用既有 Relay / 计费和登录态。
+
 > **状态：架构设计，不代表已经在 Pages 上完成真实模型调用。** GitHub Pages 当前仍是 Mock。浏览器 IndexedDB/LocalStorage 继续保存图片和会话；R2、站点作品集及保留期限仅保持在规划文档中。本文件不含上游凭证，也不触发付费 API。
 >
 > 设计目标：**对话和图片均有 Chat Completions、Responses 入口**；图片保留 Images API 作为独立第三协议的可选兼容项。协议可由管理员能力模板控制，并允许用户在已授权范围内手动选择，禁止凭模型名猜测能力。
@@ -87,7 +89,7 @@ type UserPreference = 'auto' | 'chat' | 'responses' | 'images'
 React UI / Chat-style workspace
   ├─ Composer: intent / protocol preference / model + progress
   ├─ Conversation: text / image assets / version history
-  └─ SDK interfaces: RequestEnvelope -> NormalizedResult
+  └─ Protocol-independent UI contract: RequestEnvelope -> NormalizedResult
           │ (same-origin, session cookie, CSRF protection)
           ▼
 NewAPI Playground BFF (/pg/*)
@@ -102,7 +104,7 @@ NewAPI Playground BFF (/pg/*)
 Upstream model/channel; Results -> IndexedDB + localStorage
 ```
 
-建议将 `src/api/client.ts` 分解为：
+如果继续独立版开发，建议把 `src/api/client.ts` 按以下**职责**拆分。正式集成进 NewAPI 时，优先使用 `web/src/features/playground/hooks/use-stream-request.ts`（基于 `sse.js`）、`@/lib/api` 和现有 `relayconvert`，不按下表重新开发第二套同类实现：
 ```text
 src/api/
   contracts.ts                  # UnifiedRequest, NormalizedResult, CapabilityProfile
@@ -117,7 +119,7 @@ src/api/
     chat.ts                     # choices[].message; vendor image variants by profile
     responses.ts                # output_text + image_generation_call.result
     images.ts                   # data[].b64_json | data[].url
-    sse.ts                      # incremental events + connection state
+    sse.ts                      # only standalone adapter; production reuses existing sse.js hook
   client.ts                     # stable createImages/editImages/sendChat facade
 ```
 
