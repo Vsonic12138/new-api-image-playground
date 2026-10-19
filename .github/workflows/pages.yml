@@ -1,0 +1,63 @@
+name: Publish Playground Mock to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pages.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+      - name: Build static mock (no real API requests or tokens)
+        env:
+          VITE_API_MODE: mock
+        run: npm run build -- --base=/new-api-image-playground/
+      - name: Assert this build contains no relay API calls
+        run: |
+          test -f dist/index.html
+          test -f dist/samples/robot-room.webp
+          if grep -R -E "sk-c5510c0|NEW_API_TEST_TOKEN" dist; then
+            echo "::error::Detected a forbidden credential marker in the build"
+            exit 1
+          fi
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
