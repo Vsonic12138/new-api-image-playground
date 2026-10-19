@@ -1,6 +1,6 @@
 # ADR-001：Playground 协议复用与清晰分层架构
 
-> 运行形态与图片模型白名单已经在 [ADR-002](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md) 中收敛：Standalone 可部署独立 BFF、Embedded 使用 NewAPI 登录态 Token ID；仅支持 Flare 和 Sunburst 两款图片模型。
+> 运行形态与图片模型白名单已经在 [ADR-002](DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md) 中收敛：Standalone 可部署独立 BFF、Embedded 使用 NewAPI 登录态 Token ID；**生图/修图**仅支持 Flare 和 Sunburst 两款图片模型，**LLM/VLM 不受这项白名单限制**。
 
 
 状态：**已完成代码调查和技术选型；尚未实施真实调用。** 日期：2026-10-18。目标同时支持图片与文本的 Chat Completions / Responses 协议（以及独立 Images API 兼容模式），当前浏览器本地存图不变，R2/作品保留策略只保留远期规划。
