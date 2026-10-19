@@ -19,6 +19,13 @@ export function EditorModal({ asset, onClose, onSubmit }: Props) {
   const [error, setError] = useState('')
   const drawing = useRef(false)
   const stage = useRef<Konva.Stage>(null)
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); onClose() }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onClose])
   const availableWidth = Math.max(180, window.innerWidth - (window.innerWidth > 740 ? 430 : 65))
   const availableHeight = Math.max(180, Math.min(520, window.innerHeight * (window.innerWidth > 740 ? 0.62 : 0.42)))
   const intrinsicWidth = image?.naturalWidth || 700
