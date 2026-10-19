@@ -25,6 +25,9 @@ request parsing. `src/host/adapter.ts` is the host boundary.
    the sample Nginx location in `nginx-image-workspace.conf.example`.
    In the NewAPI fork, PR #2 adds the authenticated `/image-workspace` page
    with an iframe pointing at `/pg-image-workspace/` (a distinct static prefix).
+   Once that static bundle is deployed on the same HTTPS origin, explicitly
+   set `IMAGE_WORKSPACE_ENABLED=true` on the NewAPI backend. The navigation
+   item and route default to disabled until this opt-in is present.
 2. Provide the optional four authenticated `/pg/image-playground/*` endpoints
    from NewAPI PR #2, with the route-normalization follow-up. Verify the PR,
    merge only after authorization tests, then deploy a compatible NewAPI fork.
@@ -44,7 +47,7 @@ Responses tool billing, multipart edits and real-provider smoke tests pass.
 
 ## Deployment requirement
 
-The optional NewAPI UI route must **not** be enabled without deploying the
+The optional NewAPI UI route defaults to disabled; it must **not** be enabled without deploying the
 same-origin embedded static assets. In particular, using a different hostname
 breaks the same-origin cookie contract. Embedded mode currently disables
 persistent local conversation metadata to avoid cross-account history leaks.
