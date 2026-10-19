@@ -289,6 +289,21 @@ for (const [lang, phrases] of Object.entries(welcomeText)) {
   Object.assign(imagePlaygroundTranslations[lang], phrases)
 }
 
+// New conversation-first UI labels are kept separate from the original catalog
+// so they can be reused when the playground is integrated into NewAPI.
+const interactionText: Record<string, Record<string,string>> = {
+  en: {openSidebar:'Open sidebar',closeSidebar:'Close sidebar',collapseSidebar:'Collapse sidebar',expandSidebar:'Expand sidebar',closePreview:'Close image preview',previousImage:'Previous image',nextImage:'Next image',imagePosition:'Image {{index}} of {{total}}'},
+  zhCN: {openSidebar:'打开侧边栏',closeSidebar:'关闭侧边栏',collapseSidebar:'收起侧边栏',expandSidebar:'展开侧边栏',closePreview:'关闭图片预览',previousImage:'上一张图片',nextImage:'下一张图片',imagePosition:'第 {{index}} / {{total}} 张'},
+  zhTW: {openSidebar:'開啟側邊欄',closeSidebar:'關閉側邊欄',collapseSidebar:'收合側邊欄',expandSidebar:'展開側邊欄',closePreview:'關閉圖片預覽',previousImage:'上一張圖片',nextImage:'下一張圖片',imagePosition:'第 {{index}} / {{total}} 張'},
+  ja: {openSidebar:'サイドバーを開く',closeSidebar:'サイドバーを閉じる',collapseSidebar:'サイドバーを折りたたむ',expandSidebar:'サイドバーを展開',closePreview:'画像プレビューを閉じる',previousImage:'前の画像',nextImage:'次の画像',imagePosition:'{{index}} / {{total}} 枚目'},
+  fr: {openSidebar:'Ouvrir la barre latérale',closeSidebar:'Fermer la barre latérale',collapseSidebar:'Réduire la barre latérale',expandSidebar:'Afficher la barre latérale',closePreview:'Fermer l’aperçu',previousImage:'Image précédente',nextImage:'Image suivante',imagePosition:'Image {{index}} sur {{total}}'},
+  ru: {openSidebar:'Открыть боковую панель',closeSidebar:'Закрыть боковую панель',collapseSidebar:'Свернуть боковую панель',expandSidebar:'Развернуть боковую панель',closePreview:'Закрыть просмотр',previousImage:'Предыдущее изображение',nextImage:'Следующее изображение',imagePosition:'Изображение {{index}} из {{total}}'},
+  vi: {openSidebar:'Mở thanh bên',closeSidebar:'Đóng thanh bên',collapseSidebar:'Thu gọn thanh bên',expandSidebar:'Mở rộng thanh bên',closePreview:'Đóng xem ảnh',previousImage:'Ảnh trước',nextImage:'Ảnh tiếp theo',imagePosition:'Ảnh {{index}} / {{total}}'},
+}
+for (const [lang, phrases] of Object.entries(interactionText)) {
+  Object.assign(imagePlaygroundTranslations[lang], phrases)
+}
+
 export const imagePlaygroundResources = Object.fromEntries(
   Object.entries(imagePlaygroundTranslations).map(([lng,dict]) => [lng,{imagePlayground:dict}])
 )
