@@ -1,0 +1,454 @@
+/* Conversation-first visual layer, after styles.css and newapi-skin.css.
+   Uses semantic NewAPI-compatible tokens; no external fonts or images. */
+
+.app-shell {
+  height: 100dvh;
+  min-height: 0;
+  background: var(--pg-bg);
+  color: var(--pg-text);
+}
+.app-shell, .app-shell button, .app-shell input, .app-shell select, .app-shell textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+.app-shell button:focus-visible,
+.app-shell [role="button"]:focus-visible,
+.app-shell textarea:focus-visible,
+.app-shell input:focus-visible,
+.app-shell select:focus-visible {
+  outline: 2px solid var(--pg-primary);
+  outline-offset: 3px;
+}
+.app-shell .sidebar {
+  width: 250px;
+  padding: 17px 11px 15px;
+  gap: 9px;
+  background: var(--pg-sidebar);
+  transition: width .25s ease, padding .25s ease, opacity .2s ease, transform .25s ease;
+}
+.app-shell .brand {padding: 0 10px; height: 44px; gap: 10px; font-size: 14px}
+.app-shell .brand-icon {width: 30px;height: 30px; border-radius: 10px}
+.app-shell .new-chat-button {
+  border: 1px solid var(--pg-border);
+  background: var(--pg-panel);
+  color: var(--pg-text);
+  box-shadow: none;
+  margin: 9px 2px 10px;
+  height: 42px;
+  font-weight: 550;
+  transition: background .16s ease, border-color .16s ease, transform .16s ease;
+}
+.app-shell .new-chat-button:hover {background:var(--pg-hover); transform:translateY(-1px)}
+.app-shell .primary-nav button {min-height: 40px; padding: 10px 13px; border-radius: 11px; font-size: 12px}
+.app-shell .history-header {margin: 22px 9px 5px}
+.app-shell .search-bar {margin: 0 3px; border-radius: 10px}
+.app-shell .history-item {border-radius: 10px; transition: background .15s ease}
+.app-shell .history-item.selected {background: var(--pg-hover)}
+.app-shell .selected .history-name {color:var(--pg-text)}
+.app-shell .history-name {font-size: 12px}
+.app-shell.sidebar-collapsed .sidebar {
+  width: 0;
+  padding: 0;
+  opacity: 0;
+  border-width: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.app-shell .workspace {background:var(--pg-bg)}
+.app-shell .topbar {
+  height: 64px;
+  min-height: 64px;
+  background:var(--pg-bg);
+  border-bottom: 0;
+  padding: 0 26px;
+}
+.app-shell .top-left {gap:9px; min-width:0}
+.app-shell .model-pill {
+  display: flex;
+  min-width: 0;
+  max-width: min(340px,40vw);
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 11px;
+  color: var(--pg-text);
+  transition: background .18s ease;
+}
+.app-shell .model-pill:hover {background:var(--pg-hover); filter:none}
+.app-shell .model-pill > span {white-space:nowrap; overflow:hidden;text-overflow:ellipsis}
+.app-shell .model-emoji {background:transparent;color:var(--pg-primary);width:23px;height:23px}
+.app-shell .model-chevron {color:var(--pg-muted)}
+.app-shell .sidebar-toggle {display:grid;width:36px;height:36px}
+.app-shell .top-right {gap:8px}
+.app-shell .top-right .user-bubble {width:30px;height:30px;font-size:12px}
+.app-shell .mode-badge {border-radius:999px; font-size:10px}
+.app-shell .language-select {height:34px; border-radius:9px}
+.app-shell .theme-switch {border:0}
+.app-shell .workspace-inner {min-height:0}
+.app-shell .chat-section {width:100%;min-width:0}
+.app-shell .chat-scroll {scroll-behavior:smooth}
+.app-shell .conversation-stream {
+  max-width: 900px;
+  padding: 26px 42px 24px;
+  gap: 29px;
+}
+.app-shell .message {gap: 12px; animation:pg-message-in .32s both}
+.app-shell .message-inner {width:100%}
+.app-shell .assistant-avatar {
+  width:28px;height:28px;margin-top:24px;
+  border-radius: 11px;
+  background:var(--pg-primary-soft);
+  color:var(--pg-primary);
+}
+.app-shell .assistant-text {padding: 2px 0 8px; font-size:14px; line-height:1.75}
+.app-shell .user-message {max-width:min(76%, 650px)}
+.app-shell .user-bubble-text {
+  border:0; border-radius: 19px 19px 6px 19px;
+  font-size:14px; line-height:1.7;
+  padding: 12px 17px;
+  background:var(--pg-surface);
+}
+.app-shell .message-time {font-size:10px; margin-bottom:9px}
+.app-shell .pending-answer {
+  display:flex;gap:12px;align-items:center;
+  font-size:13px;padding:15px 0;
+}
+.app-shell .pending-orbit {
+  width:32px;height:32px;border-radius:12px;display:grid;place-items:center;
+  color:var(--pg-primary);background:var(--pg-primary-soft);
+  animation:pg-breathe 2s ease-in-out infinite;
+}
+.app-shell .pending-dots {display:inline-flex;gap:4px;align-items:center}
+.app-shell .pending-dots i {width:5px;height:5px;border-radius:50%;background:var(--pg-primary);opacity:.2;animation:pg-dot 1.4s ease-in-out infinite}
+.app-shell .pending-dots i:nth-child(2){animation-delay:.2s}
+.app-shell .pending-dots i:nth-child(3){animation-delay:.4s}
+
+.app-shell .result-images {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:14px;
+  max-width:760px;
+}
+.app-shell .result-image-item {
+  min-width:0;
+  padding:0;
+  border:0;
+  border-radius:18px;
+  background:transparent;
+  box-shadow:none;
+  animation:pg-image-in .38s ease-out both;
+}
+.app-shell .result-image-item:nth-child(2){animation-delay:.08s}
+.app-shell .result-image-item:nth-child(3){animation-delay:.16s}
+.app-shell .result-image-item:nth-child(4){animation-delay:.24s}
+.app-shell .result-image-item .image-frame {
+  aspect-ratio:auto;
+  min-height:0;
+  border-radius:17px;
+  overflow:hidden;
+  border: 1px solid var(--pg-border);
+  background:var(--pg-surface);
+  transition:transform .23s cubic-bezier(.2,.75,.25,1), box-shadow .23s ease, border-color .23s ease;
+}
+.app-shell .result-image-item .image-frame[role="button"]:hover {
+  transform:translateY(-3px);
+  border-color:var(--pg-primary);
+  box-shadow:0 14px 30px rgba(0,0,0,.12);
+}
+.app-shell .result-image-item .image-frame img {
+  display:block;
+  width:100%;
+  height:auto;
+  max-height:470px;
+  object-fit:contain;
+}
+.app-shell .image-actions {gap:8px; margin:9px 0 0}
+.app-shell .image-actions button {
+  background:transparent;
+  border: 1px solid transparent;
+  color: var(--pg-muted);
+  border-radius:11px;
+  padding:9px 10px;
+  transition: background .18s ease, color .18s ease;
+}
+.app-shell .image-actions button:hover {
+  background:var(--pg-hover);
+  color:var(--pg-text);
+  filter:none;
+}
+.app-shell .image-actions button:first-child {color:var(--pg-primary)}
+.app-shell .user-images {max-width:190px;grid-template-columns:1fr}
+.app-shell .user-images .image-frame{border-radius:12px}
+.app-shell .empty-state{min-height:clamp(320px,55vh,560px);padding-bottom:40px}
+.app-shell .empty-logo{width:52px;height:52px;border-radius:16px;background:var(--pg-primary-soft)}
+.app-shell .empty-state h1 {font-size: clamp(23px,3vw,30px);font-weight:600;letter-spacing:-.65px}
+.app-shell .empty-state p {font-size:13px}
+.app-shell .inspiration-row{gap:9px; max-width:720px}
+.app-shell .inspiration-row button {
+  padding:12px 15px;
+  font-size:12px;
+  border-radius:15px;
+  background:var(--pg-panel);
+  transition:transform .18s ease, box-shadow .18s ease;
+}
+.app-shell .inspiration-row button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.06)}
+
+.app-shell .composer-area{
+  width:100%;
+  max-width:900px;
+  padding: 5px 38px 0;
+  background:var(--pg-bg);
+}
+.app-shell .composer {
+  border:1px solid var(--pg-border);
+  background:var(--pg-panel);
+  border-radius:24px;
+  padding:12px 14px;
+  box-shadow:0 5px 24px rgba(0,0,0,.065);
+  transition:box-shadow .2s ease, border-color .2s ease, transform .2s ease;
+}
+.app-shell .composer:focus-within{
+  box-shadow:0 8px 30px rgba(0,0,0,.09);
+  border-color:var(--pg-border);
+}
+.app-shell .composer-tabs {padding-bottom:7px;gap:5px}
+.app-shell .composer-tabs button{
+  padding:7px 12px;
+  border-radius:10px;
+  font-size:12px;
+  transition:color .18s ease, background .18s ease;
+}
+.app-shell .composer-tabs button.active {background:var(--pg-primary-soft);color:var(--pg-primary)}
+.app-shell .composer textarea{
+  display:block;
+  resize:none;
+  min-height:68px;
+  max-height:180px;
+  padding:12px 8px 13px;
+  line-height:1.6;
+  font-size:14px;
+}
+.app-shell .composer-bottom {padding-top:3px}
+.app-shell .secondary-button {
+  border:0;
+  border-radius:12px;
+  min-height:36px;
+  padding:8px 10px;
+  background:transparent;
+  transition:background .16s ease;
+}
+.app-shell .secondary-button:hover {background:var(--pg-hover);filter:none}
+.app-shell .picked-image {border-radius:10px}
+.app-shell .send-button {
+  min-width:84px;
+  height:40px;
+  border-radius:13px;
+  transition:transform .17s ease, box-shadow .17s ease, opacity .17s ease;
+}
+.app-shell .send-button:not(:disabled):hover {
+  transform:translateY(-2px);
+  box-shadow:0 7px 16px rgba(38,131,216,.25);
+  filter:none;
+}
+.app-shell .composer-tip {padding:8px 0 11px;font-size:10px}
+.app-shell .sidebar-scrim {display:none}
+
+/* Image viewer uses a quiet, immersive canvas instead of a persistent right rail. */
+.app-shell .preview-backdrop {
+  position:fixed;inset:0;z-index:45;
+  display:grid;place-items:center;
+  padding:clamp(10px,2.4vw,28px);
+  background:rgba(11,16,24,.72);
+  backdrop-filter:blur(11px);
+  animation:pg-fade-in .22s ease-out both;
+}
+.app-shell .preview-dialog {
+  width:min(1320px,100%);
+  height:min(900px,94dvh);
+  background:var(--pg-panel);
+  color:var(--pg-text);
+  border:1px solid var(--pg-border);
+  border-radius:22px;
+  box-shadow:0 28px 90px rgba(0,0,0,.27);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  animation:pg-dialog-in .25s cubic-bezier(.2,.8,.2,1) both;
+}
+.app-shell .preview-header {
+  min-height:65px;
+  padding:11px 22px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--pg-border);
+}
+.app-shell .preview-heading{display:flex;align-items:center;gap:11px;font-size:14px}
+.app-shell .preview-heading > svg {color:var(--pg-primary)}
+.app-shell .preview-heading span{color:var(--pg-muted);font-weight:400;font-size:12px}
+.app-shell .preview-icon-button, .app-shell .preview-nav {
+  display:grid;place-items:center;flex-shrink:0;
+  width:37px;height:37px;
+  color:var(--pg-text);
+  background:var(--pg-panel);
+  border-radius:12px;
+  transition:background .18s ease, transform .18s ease;
+}
+.app-shell .preview-icon-button:hover,.app-shell .preview-nav:hover {background:var(--pg-hover);filter:none}
+.app-shell .preview-body{display:flex; flex:1; min-height:0}
+.app-shell .preview-stage{
+  position:relative;
+  display:flex;
+  flex:1;min-width:0;
+  justify-content:center;align-items:center;
+  padding:30px 60px;
+  background:var(--pg-subtle);
+}
+.app-shell .preview-hero {
+  background:transparent;
+  min-height:0;
+  border-radius:0;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  overflow:hidden;
+}
+.app-shell .preview-hero img {
+  width:auto;
+  height:auto;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  border-radius:9px;
+  box-shadow:0 8px 26px rgba(0,0,0,.07);
+}
+.app-shell .preview-nav {position:absolute;top:50%;transform:translateY(-50%);z-index:2;box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.app-shell .preview-nav:hover{transform:translateY(-50%) scale(1.06)}
+.app-shell .preview-nav-left{left:15px}
+.app-shell .preview-nav-right{right:15px}
+.app-shell .preview-details {
+  width:272px; flex-shrink:0;
+  display:flex;flex-direction:column;
+  gap:22px;
+  padding:28px 22px;
+  border-left:1px solid var(--pg-border);
+}
+.app-shell .preview-details h2{font-size:17px;font-weight:600;margin:0 0 6px}
+.app-shell .preview-subtitle{color:var(--pg-muted);font-size:12px;margin:0}
+.app-shell .preview-meta{display:flex;flex-direction:column;gap:15px;font-size:12px}
+.app-shell .preview-meta > div{display:flex;flex-direction:column;gap:5px}
+.app-shell .preview-meta span{color:var(--pg-muted)}
+.app-shell .preview-meta strong{font-weight:500;overflow-wrap:anywhere}
+.app-shell .preview-actions{margin-top:auto;display:flex;flex-direction:column;gap:9px}
+.app-shell .preview-actions button{width:100%;justify-content:center;min-height:42px}
+.app-shell .preview-download{display:flex;gap:10px;align-items:center;border:1px solid var(--pg-border);border-radius:10px;background:var(--pg-panel);color:var(--pg-text)}
+.app-shell .preview-footer{min-height:110px;display:flex;align-items:center;gap:18px;padding:12px 24px;border-top:1px solid var(--pg-border);color:var(--pg-muted);font-size:12px}
+.app-shell .preview-thumbnails{display:flex;gap:10px;align-items:center;overflow-x:auto;scrollbar-width:thin;min-width:0}
+.app-shell .preview-thumb{
+  height:69px;width:78px;flex:0 0 78px;
+  border-radius:11px;
+  border:2px solid transparent;
+  transition:border-color .2s ease,transform .2s ease;
+}
+.app-shell .preview-thumb:hover{transform:translateY(-2px)}
+.app-shell .preview-thumb.selected{border-color:var(--pg-primary)}
+.app-shell .preview-thumb img{width:100%;height:100%;object-fit:contain}
+.app-shell .settings-modal,.app-shell .editor-modal{animation:pg-dialog-in .24s cubic-bezier(.2,.8,.2,1) both}
+.app-shell .modal-backdrop{animation:pg-fade-in .19s both}
+.app-shell .editor-modal{border-radius:19px}
+.app-shell .editor-toolbar button,.app-shell .quick-grid button{transition:background .16s ease,color .16s ease}
+.app-shell .stage-wrap{background:var(--pg-subtle);border-radius:13px}
+.app-shell .toast{animation:pg-toast-in .25s both;border-radius:14px}
+
+@keyframes pg-message-in {from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pg-image-in {from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes pg-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes pg-dialog-in {from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes pg-toast-in{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes pg-breathe{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.07);opacity:1}}
+@keyframes pg-dot{0%,60%,100%{opacity:.2;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+
+@media (max-width: 1020px) {
+  .app-shell .conversation-stream {max-width:850px;padding-inline:26px}
+  .app-shell .composer-area {padding-inline:22px}
+  .app-shell .preview-details {width:225px;padding:22px 16px}
+  .app-shell .preview-stage {padding:20px 45px}
+}
+@media (max-width:740px) {
+  .app-shell .sidebar,
+  .app-shell.sidebar-collapsed .sidebar {
+    position:fixed;left:0;top:0;bottom:0;z-index:22;
+    width:min(285px,85vw);
+    padding:17px 11px;
+    opacity:1;overflow-y:auto;pointer-events:auto;
+    transform:translateX(-110%);
+    border-right:1px solid var(--pg-border);
+  }
+  .app-shell .sidebar.sidebar-open,.app-shell.sidebar-collapsed .sidebar.sidebar-open{transform:translateX(0)}
+  .app-shell .sidebar-scrim {
+    position:fixed;inset:0;z-index:21;
+    display:block;background:rgba(0,0,0,.3);
+    width:100%;
+  }
+  .app-shell .topbar {height:55px;min-height:55px;padding:0 10px;gap:5px}
+  .app-shell .sidebar-toggle {display:none}
+  .app-shell .mobile-menu {display:grid}
+  .app-shell .top-right{gap:1px}
+  .app-shell .model-pill{max-width:38vw;font-size:12px;padding:6px 4px}
+  .app-shell .model-emoji{display:none}
+  .app-shell .top-right .user-bubble{display:none}
+  .app-shell .mode-badge{display:none}
+  .app-shell .language-select{min-width:67px;max-width:78px;padding-inline:4px}
+  .app-shell .conversation-stream{padding:17px 14px 17px;gap:20px}
+  .app-shell .message{gap:8px}
+  .app-shell .assistant-avatar{width:25px;height:25px;margin-top:22px;border-radius:9px}
+  .app-shell .user-message{max-width:93%}
+  .app-shell .user-bubble-text,.app-shell .assistant-text{font-size:13px}
+  .app-shell .result-images{gap:10px}
+  .app-shell .result-image-item .image-frame{border-radius:13px}
+  .app-shell .image-actions{gap:2px}
+  .app-shell .image-actions button{padding:8px 4px;font-size:10px}
+  .app-shell .image-actions button svg{width:13px}
+  .app-shell .composer-area{padding:3px 9px 0}
+  .app-shell .composer{padding:9px 10px;border-radius:19px}
+  .app-shell .composer textarea{font-size:13px;min-height:61px;padding:8px 5px}
+  .app-shell .composer-tabs button{padding:6px 9px}
+  .app-shell .composer-tip{font-size:9px}
+  .app-shell .send-button{height:38px;min-width:62px;padding:9px 11px}
+  .app-shell .preview-backdrop{padding:0}
+  .app-shell .preview-dialog{height:100dvh;width:100%;border:0;border-radius:0}
+  .app-shell .preview-header{min-height:58px;padding:8px 13px}
+  .app-shell .preview-body{flex-direction:column}
+  .app-shell .preview-stage{min-height:0;flex:1;padding:12px 35px}
+  .app-shell .preview-nav{width:30px;height:36px}
+  .app-shell .preview-nav-left{left:3px}
+  .app-shell .preview-nav-right{right:3px}
+  .app-shell .preview-details{width:100%;border-left:0;border-top:1px solid var(--pg-border);padding:12px 16px;gap:10px}
+  .app-shell .preview-details h2{font-size:14px}
+  .app-shell .preview-meta{display:none}
+  .app-shell .preview-actions{flex-direction:row}
+  .app-shell .preview-actions button{flex:1;min-width:0}
+  .app-shell .preview-footer{min-height:86px;padding:9px 12px;gap:10px}
+  .app-shell .preview-thumb{width:60px;flex-basis:60px;height:57px}
+}
+@media (max-width:430px){
+  .app-shell .result-images{grid-template-columns:1fr}
+  .app-shell .result-image-item{max-width:100%}
+  .app-shell .result-image-item .image-frame img{max-height:380px}
+  .app-shell .top-right .theme-switch{display:none}
+  .app-shell .composer-left{gap:4px}
+  .app-shell .picked-image span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .app-shell *, .app-shell *::before, .app-shell *::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+  }
+}
