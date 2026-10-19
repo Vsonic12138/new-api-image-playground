@@ -1,6 +1,6 @@
 # New API Image Playground（独立开发版）
 
-> 范围限定：只支持 `gpt-image-2.5-flare` 和 `gpt-image-2.5-sunburst` 两个图像模型。目标同时支持独立部署和 NewAPI 内嵌，并可在站内选择用户已有 Token / 受权分组。详情见 [ADR-002：双部署与 GPT Image 2.5](docs/DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md)。两种真实接入目前仍未上线，Pages 仍是 Mock。
+> 图片生成/编辑仅支持 `gpt-image-2.5-flare` 和 `gpt-image-2.5-sunburst`；聊天、视觉理解及 Responses 主模型使用中转已有的、用户有权访问的其他 LLM/VLM。目标同时支持独立部署和 NewAPI 内嵌，并可在站内选择用户已有 Token / 受权分组。详情见 [ADR-002：双部署与 GPT Image 2.5](docs/DUAL_DEPLOYMENT_GPT_IMAGE_25.zh-CN.md)。两种真实接入目前仍未上线，Pages 仍是 Mock。
 
 
 这是一个准备将来集成到 `Vsonic12138/new-api` 的独立前端工程。界面参考之前确认的三张原型图，技术栈是 React、TypeScript、Vite、react-konva。
