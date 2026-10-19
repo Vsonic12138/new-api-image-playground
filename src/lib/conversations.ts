@@ -41,6 +41,12 @@ export function loadSettings(): AppSettings {
       imageModel: typeof saved.imageModel === 'string' && isImageModel(saved.imageModel)
         ? saved.imageModel
         : DEFAULT_SETTINGS.imageModel,
+      chatModel: typeof saved.chatModel === 'string' ? saved.chatModel : DEFAULT_SETTINGS.chatModel,
+      responsesModel: typeof saved.responsesModel === 'string' ? saved.responsesModel : DEFAULT_SETTINGS.responsesModel,
+      chatProtocol: saved.chatProtocol === 'responses' ? 'responses' : 'chat',
+      imageProtocol: ['auto', 'chat', 'responses', 'images'].includes(saved.imageProtocol)
+        ? saved.imageProtocol
+        : 'auto',
     }
   } catch { return DEFAULT_SETTINGS }
 }
