@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LANGUAGE_OPTIONS, toIntlLocale } from './i18n/resources'
 import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelLeftClose, PanelLeftOpen, X, Menu, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
@@ -10,6 +10,8 @@ import { ImageView } from './components/ImageView'
 import { ImageLightbox } from './components/ImageLightbox'
 import { EditorModal } from './components/EditorModal'
 import { GenerationProgress } from './components/GenerationProgress'
+import { ConnectionControl } from './components/ConnectionControl'
+import { runtimeMode } from './api/protocols'
 import { fileFromAsset } from './lib/image-store'
 
 function truncate(s: string, n = 30) { return s.length > n ? `${s.slice(0, n)}…` : s }
@@ -25,6 +27,7 @@ export default function App() {
   const [convos, setConvos] = useState<Conversation[]>(loadConversations)
   const [activeId, setActiveId] = useState(() => loadConversations()[0]?.id || '')
   const [settings, setSettings] = useState<AppSettings>(loadSettings)
+  const [availableModels, setAvailableModels] = useState<string[]>([])
   const [mode, setMode] = useState<WorkMode>('generate')
   const [text, setText] = useState('')
   const [selected, setSelected] = useState<AssetRef | undefined>()
@@ -43,6 +46,7 @@ export default function App() {
   const uploadRef = useRef<HTMLInputElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const active = convos.find(c => c.id === activeId) || convos[0]
+  const updateModels = useCallback((models: string[]) => setAvailableModels(models), [])
 
   useEffect(() => () => window.clearTimeout(handoffTimer.current), [])
   useEffect(() => { localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
@@ -128,7 +132,7 @@ export default function App() {
     setEditorTarget(undefined)
     setEditorReturnAsset(undefined)
     const conversationId = active.id
-    const input: Message = { id: uuid(), role: 'user', mode: actualMode, text: cleanPrompt, images: actualMode === 'edit' && image ? [image] : [], createdAt: Date.now() }
+    const input: Message = { id: uuid(), role: 'user', mode: actualMode, text: cleanPrompt, images: (actualMode === 'edit' && image) || (actualMode === 'chat' && selected) ? [image!] : [], createdAt: Date.now() }
     const answerId = uuid()
     const pending: Message = { id: answerId, role: 'assistant', mode: actualMode, text: '', images: [], createdAt: Date.now(), status: 'pending', progressPhase: 'preparing' }
     modify(conversationId, c => ({ ...c, title: c.messages.length ? c.title : truncate(cleanPrompt, 24), updatedAt: Date.now(), messages: [...c.messages, input, pending] }))
@@ -142,15 +146,23 @@ export default function App() {
       try {
         let answer = ''
         let images: AssetRef[] = []
+        let actualProtocol: Message['protocol']
+        let responseId: string | undefined
+        let requestModel = actualMode === 'chat' ? (settings.chatProtocol === 'responses' ? settings.responsesModel : settings.chatModel) : (settings.imageProtocol === 'responses' ? settings.responsesModel : settings.imageModel)
         if (actualMode === 'generate') {
-          images = await createImages(cleanPrompt, settings, reportProgress)
-          answer = t('generatedCount', {count: images.length})
+          const result = await createImages(cleanPrompt, settings, reportProgress)
+          images = result.images; actualProtocol = result.protocol; responseId = result.responseId
+          answer = result.text || t('generatedCount', {count: images.length})
         } else if (actualMode === 'edit' && image) {
           const annotatedPrompt = annotated ? `${cleanPrompt}\n参考图片上含有红色圈选标记，请理解为需要修改的位置，生成图中不要保留标记，其它部分尽可能保持一致。` : cleanPrompt
-          images = await editImages(annotatedPrompt, image, settings, annotated, reportProgress)
-          answer = t('editedCount', {count: images.length}) + (annotated ? ` ${t('annotationsLimit')}` : '')
-        } else answer = await sendChat(cleanPrompt, previous, settings)
-        modify(conversationId, c => ({ ...c, updatedAt: Date.now(), messages: c.messages.map(m => m.id === answerId ? { ...m, text: answer, images, status: 'done' as const } : m) }))
+          const result = await editImages(annotatedPrompt, image, settings, annotated, reportProgress)
+          images = result.images; actualProtocol = result.protocol; responseId = result.responseId
+          answer = (result.text || t('editedCount', {count: images.length})) + (annotated ? ` ${t('annotationsLimit')}` : '')
+        } else {
+          const result = await sendChat(cleanPrompt, previous, settings, selected)
+          answer = result.text; actualProtocol = result.protocol; responseId = result.responseId
+        }
+        modify(conversationId, c => ({ ...c, updatedAt: Date.now(), messages: c.messages.map(m => m.id === answerId ? { ...m, text: answer, images, protocol:actualProtocol, requestModel, responseId, status: 'done' as const } : m) }))
         if (images.length) setSelected(images[0])
       } catch (e) {
         const message = e instanceof Error ? e.message : '未知错误'
@@ -179,13 +191,13 @@ export default function App() {
         <button className="sidebar-toggle icon-button" onClick={() => setSidebarCollapsed(v => !v)} title={t(sidebarCollapsed ? 'expandSidebar' : 'collapseSidebar')} aria-label={t(sidebarCollapsed ? 'expandSidebar' : 'collapseSidebar')}>{sidebarCollapsed ? <PanelLeftOpen size={19}/> : <PanelLeftClose size={19}/>}</button>
         <button className="model-pill" onClick={() => setShowSettings(true)} title={t('settingsModels')}><div className="model-emoji"><WandSparkles size={17}/></div><span>{settings.imageModel}</span><ChevronDown className="model-chevron" size={14}/></button>
       </div>
-        <div className="top-right"><span className={`mode-badge ${isMockMode ? 'mock' : 'real'}`}>{isMockMode ? t('demoMode') : t('liveMode')}</span><select className="language-select" aria-label="Language" value={i18n.resolvedLanguage || i18n.language} onChange={e => { void i18n.changeLanguage(e.target.value) }}>{LANGUAGE_OPTIONS.map(lang => <option key={lang.code} value={lang.code}>{lang.label}</option>)}</select><button className="icon-button theme-switch" title={theme === 'dark' ? 'Light' : 'Dark'} aria-label="Toggle theme" onClick={() => setTheme(v => v === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={17}/> : <Moon size={17}/>}</button><button className="icon-button" title={t('settings')} onClick={() => setShowSettings(true)}><Settings2 size={19}/></button><span className="user-bubble">P</span></div>
+        <div className="top-right">{runtimeMode === 'standalone' && <ConnectionControl onModels={updateModels}/>}<span className={`mode-badge ${isMockMode ? 'mock' : 'real'}`}>{isMockMode ? t('demoMode') : t('liveMode')}</span><select className="language-select" aria-label="Language" value={i18n.resolvedLanguage || i18n.language} onChange={e => { void i18n.changeLanguage(e.target.value) }}>{LANGUAGE_OPTIONS.map(lang => <option key={lang.code} value={lang.code}>{lang.label}</option>)}</select><button className="icon-button theme-switch" title={theme === 'dark' ? 'Light' : 'Dark'} aria-label="Toggle theme" onClick={() => setTheme(v => v === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun size={17}/> : <Moon size={17}/>}</button><button className="icon-button" title={t('settings')} onClick={() => setShowSettings(true)}><Settings2 size={19}/></button><span className="user-bubble">P</span></div>
       </header>
       <div className="workspace-inner"><main className="chat-section"><div className="chat-scroll"><div className="conversation-stream">
         {(!active || !active.messages.length) && <div className="empty-state"><div className="empty-logo"><Sparkles size={30}/></div><h1>{t('startCreating')}</h1><p>{t('emptyHint')}</p><div className="inspiration-row">{(['inspiration1','inspiration2','inspiration3'] as const).map(key => <button key={key} onClick={() => { setMode('generate'); setText(t(key)) }}><WandSparkles size={14}/>{t(key)}</button>)}</div></div>}
         {active?.messages.map(message => <div key={message.id} className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`}>
           {message.role === 'assistant' && <div className="assistant-avatar"><Sparkles size={17}/></div>}
-          <div className="message-inner"><div className="message-time">{time(message.createdAt)} · {t(message.mode)}</div>
+          <div className="message-inner"><div className="message-time">{time(message.createdAt)} · {t(message.mode)}{message.protocol ? ` · ${message.protocol.toUpperCase()}` : ''}{message.requestModel ? ` · ${message.requestModel}` : ''}</div>
             {message.role === 'user' ? <div className="user-bubble-text">{message.text}</div> : message.status === 'pending' ? (message.mode === 'chat'
               ? <div className="pending-answer" role="status" aria-live="polite"><div className="pending-orbit"><Sparkles size={17}/></div><span>{t('responding')}</span><span className="pending-dots" aria-hidden="true"><i/><i/><i/></span></div>
               : <GenerationProgress mode={message.mode} phase={message.progressPhase} startedAt={message.createdAt}/>) : <div className={`assistant-text ${message.status === 'error' ? 'error-text' : ''}`}>{message.text}</div>}
@@ -202,8 +214,13 @@ export default function App() {
     </div>
     </div>
     {showSettings && <div className="modal-backdrop" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) setShowSettings(false) }}><div className="settings-modal" role="dialog" aria-modal="true"><div className="settings-head"><h2>{t('settingsTitle')}</h2><button className="icon-button" onClick={() => setShowSettings(false)}><X size={20}/></button></div><p className="muted">{t('settingsDesc')}</p>
-      <label>{t('imageModel')}<select value={settings.imageModel} onChange={e => { if (isImageModel(e.target.value)) setSettings(s => ({...s, imageModel:e.target.value as typeof s.imageModel})) }}><option value="gpt-image-2.5-flare">gpt-image-2.5-flare</option><option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst</option></select></label>
-      <label>{t('chatModel')}<input value={settings.chatModel} onChange={e => setSettings(s => ({ ...s, chatModel: e.target.value }))}/></label>
+      <label>{t('imageModel')}<select value={settings.imageModel} onChange={e => { if (isImageModel(e.target.value)) setSettings(s => ({...s, imageModel:e.target.value})) }}><option value="gpt-image-2.5-flare">gpt-image-2.5-flare</option><option value="gpt-image-2.5-sunburst">gpt-image-2.5-sunburst</option></select></label>
+      <label>图片生成协议<select value={settings.imageProtocol} onChange={e => setSettings(s => ({ ...s, imageProtocol: e.target.value as AppSettings['imageProtocol'] }))}><option value="auto">自动：Images API</option><option value="images">Images API</option><option value="responses">Responses API 图片工具</option><option value="chat" disabled>Chat 图片输出（未验证，不可用）</option></select></label>
+      <label>文字 / VLM 对话协议<select value={settings.chatProtocol} onChange={e => setSettings(s => ({ ...s, chatProtocol: e.target.value === 'responses' ? 'responses' : 'chat' }))}><option value="chat">Chat Completions</option><option value="responses">Responses API</option></select></label>
+      <label>{t('chatModel')}<input list="pg-available-models" value={settings.chatModel} onChange={e => setSettings(s => ({ ...s, chatModel: e.target.value }))}/></label>
+      <label>Responses 主模型<input list="pg-available-models" value={settings.responsesModel} onChange={e => setSettings(s => ({ ...s, responsesModel: e.target.value }))}/></label>
+      <datalist id="pg-available-models">{availableModels.map(model=><option value={model} key={model}/>)}</datalist>
+      <p className="muted">图片输出只使用 Flare / Sunburst；文字及图片理解模型可从你授权的 LLM/VLM 中选择。Responses 图片工具要求上面的主模型支持 image_generation。所有模型调用是否成功由当前通道决定。</p>
       <label>{t('imageSize')}<select value={settings.size} onChange={e => setSettings(s => ({ ...s, size: e.target.value }))}><option value="1024x1024">1024 × 1024</option><option value="1536x1024">1536 × 1024</option><option value="1024x1536">1024 × 1536</option><option value="auto">auto（由上游决定）</option></select></label>
       <label>{t('imageNumber')}<select value={settings.count} onChange={e => setSettings(s => ({ ...s, count: Number(e.target.value) }))}><option value={1}>1 张</option><option value={2}>2 张</option><option value={3}>3 张</option><option value={4}>4 张</option></select></label>
       <div className="notice-box"><Info size={16}/><div>{t('upstreamCompatibilityNote')}</div></div>
