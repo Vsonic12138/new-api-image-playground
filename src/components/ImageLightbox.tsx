@@ -13,9 +13,10 @@ type Props = {
   onSelect: (image: AssetRef) => void
   onEdit: (image: AssetRef) => void
   onDownload: (image: AssetRef) => void
+  transitioningToEditor?: boolean
 }
 
-export function ImageLightbox({ image, images, imageModel, onClose, onSelect, onEdit, onDownload }: Props) {
+export function ImageLightbox({ image, images, imageModel, onClose, onSelect, onEdit, onDownload, transitioningToEditor = false }: Props) {
   const { t, i18n } = useTranslation('imagePlayground')
   const closeButton = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -44,12 +45,12 @@ export function ImageLightbox({ image, images, imageModel, onClose, onSelect, on
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
         }
       }
-      if (event.key === 'Escape') { event.preventDefault(); onClose() }
-      if (event.key === 'ArrowLeft' && hasMultiple) {
+      if (event.key === 'Escape' && !transitioningToEditor) { event.preventDefault(); onClose() }
+      if (event.key === 'ArrowLeft' && hasMultiple && !transitioningToEditor) {
         event.preventDefault()
         changeImage(-1)
       }
-      if (event.key === 'ArrowRight' && hasMultiple) {
+      if (event.key === 'ArrowRight' && hasMultiple && !transitioningToEditor) {
         event.preventDefault()
         changeImage(1)
       }
@@ -58,16 +59,16 @@ export function ImageLightbox({ image, images, imageModel, onClose, onSelect, on
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  return <div className="preview-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
-    <div ref={dialogRef} className="preview-dialog" role="dialog" aria-modal="true" aria-label={t('imageDetail')}>
+  return <div className={`preview-backdrop ${transitioningToEditor ? 'preview-exiting' : ''}`} onMouseDown={event => { if (event.target === event.currentTarget && !transitioningToEditor) onClose() }}>
+    <div ref={dialogRef} className="preview-dialog" role="dialog" aria-busy={transitioningToEditor} aria-modal="true" aria-label={t('imageDetail')}>
       <header className="preview-header">
         <div className="preview-heading"><Sparkles size={18}/><strong>{t('imageDetail')}</strong><span>{t('imagePosition', { index: safeIndex + 1, total: images.length })}</span></div>
-        <button ref={closeButton} type="button" className="preview-icon-button" onClick={onClose} aria-label={t('closePreview')} title={t('closePreview')}><X size={20}/></button>
+        <button ref={closeButton} type="button" className="preview-icon-button" onClick={onClose} disabled={transitioningToEditor} aria-label={t('closePreview')} title={t('closePreview')}><X size={20}/></button>
       </header>
       <div className="preview-body">
         <div className="preview-stage">
           {hasMultiple && <button type="button" className="preview-nav preview-nav-left" onClick={() => changeImage(-1)} aria-label={t('previousImage')} title={t('previousImage')}><ChevronLeft size={22}/></button>}
-          <ImageView asset={image} className="preview-hero" alt={t('currentImage')}/>
+          <ImageView key={image.id} asset={image} className="preview-hero" alt={t('currentImage')}/>
           {hasMultiple && <button type="button" className="preview-nav preview-nav-right" onClick={() => changeImage(1)} aria-label={t('nextImage')} title={t('nextImage')}><ChevronRight size={22}/></button>}
         </div>
         <aside className="preview-details">
@@ -80,8 +81,8 @@ export function ImageLightbox({ image, images, imageModel, onClose, onSelect, on
             <div><span>{t('createdTime')}</span><strong>{new Date(image.createdAt).toLocaleString(toIntlLocale(i18n.resolvedLanguage || i18n.language))}</strong></div>
           </div>
           <div className="preview-actions">
-            <button type="button" className="primary-button" onClick={() => onEdit(image)}><Pencil size={17}/>{t('continueEdit')}</button>
-            <button type="button" className="preview-download" onClick={() => onDownload(image)}><Download size={17}/>{t('download')}</button>
+            <button type="button" className="primary-button" disabled={transitioningToEditor} onClick={() => onEdit(image)}><Pencil size={17}/>{t('continueEdit')}</button>
+            <button type="button" className="preview-download" disabled={transitioningToEditor} onClick={() => onDownload(image)}><Download size={17}/>{t('download')}</button>
           </div>
         </aside>
       </div>
