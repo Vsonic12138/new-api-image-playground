@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/pages.yml'
       - 'src/**'
+      - 'demo/**'
       - 'public/**'
       - 'index.html'
       - 'package.json'
@@ -36,6 +37,17 @@ jobs:
         env:
           VITE_API_MODE: mock
         run: npm run build -- --base=/new-api-image-playground/
+      - name: Include offline demo at /demo/
+        run: |
+          mkdir -p dist/demo
+          cp demo/index.html dist/demo/index.html
+          cp src/styles.css dist/demo/styles.css
+          # Demo is served under /new-api-image-playground/demo/;
+          # Vite already copies public/samples to dist/samples.
+          sed -i 's|../src/styles.css|./styles.css|g; s|../public/samples/|../samples/|g' dist/demo/index.html
+          test -f dist/demo/index.html
+          test -f dist/demo/styles.css
+          test -f dist/samples/robot-room.webp
       - name: Assert this build contains no relay API calls
         run: |
           test -f dist/index.html
