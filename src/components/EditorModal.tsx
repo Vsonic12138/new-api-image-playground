@@ -19,9 +19,13 @@ export function EditorModal({ asset, onClose, onSubmit }: Props) {
   const [error, setError] = useState('')
   const drawing = useRef(false)
   const stage = useRef<Konva.Stage>(null)
-  const width = Math.min(690, Math.max(320, window.innerWidth - 90))
-  const ratio = image ? image.naturalHeight / image.naturalWidth : 0.7
-  const height = Math.min(480, Math.round(width * ratio))
+  const availableWidth = Math.max(180, window.innerWidth - (window.innerWidth > 740 ? 430 : 65))
+  const availableHeight = Math.max(180, Math.min(520, window.innerHeight * (window.innerWidth > 740 ? 0.62 : 0.42)))
+  const intrinsicWidth = image?.naturalWidth || 700
+  const intrinsicHeight = image?.naturalHeight || 490
+  const scale = Math.min(1, 690 / intrinsicWidth, availableWidth / intrinsicWidth, availableHeight / intrinsicHeight)
+  const width = Math.max(1, Math.round(intrinsicWidth * scale))
+  const height = Math.max(1, Math.round(intrinsicHeight * scale))
   useEffect(() => {
     let alive = true
     let objectUrl: string | undefined
