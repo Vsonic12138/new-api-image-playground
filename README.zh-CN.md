@@ -24,6 +24,20 @@
 
 三张设计参考图在 `docs/prototypes/`。
 
+## 真实模型运行与 NewAPI 接入（开发版）
+
+目前代码已有 Chat/Responses 文本、Images/Responses 图像请求入口，并新增独立服务端和 NewAPI 用户 Token/分组前端选择。**GitHub Pages 继续使用 Mock，不会执行付费请求。** 实施进度与准确限制见 [当前落地状态](docs/IMPLEMENTATION_STATUS.zh-CN.md)，NewAPI 后端接入放在 [Draft PR #2](https://github.com/Vsonic12138/new-api/pull/2)，尚未合并。
+
+独立部署需要 Node.js 22+：
+
+```bash
+npm install
+npm run build:standalone
+NODE_ENV=production UPSTREAM_API_BASE_URL=https://你的newapi域名/v1 HOST=127.0.0.1 PORT=3005 npm run start:standalone
+```
+
+务必配置 HTTPS 反向代理，并确保 `UPSTREAM_API_BASE_URL` 是可信的固定上游地址。用户在独立版 UI 中输入**自己的低额度 Key** 建立短期服务端会话；不要提供管理员 Key，也不要把 Key 配入 `VITE_*` 变量、GitHub 仓库或公开 Pages。
+
 ## 安装与运行 React 工程
 
 要求 Node.js 20+：
@@ -44,7 +58,7 @@ NEW_API_BASE_URL=https://你的newapi域名
 NEW_API_TEST_TOKEN=你的低额度测试Token
 ```
 
-随后重启 `npm run dev`。图像和聊天模型名称可在 UI 右上角设置修改。
+随后重启 `npm run dev`。图片模型仅能从 Flare/Sunburst 中选择，聊天及 Responses 主模型可使用已授权的其他 LLM/VLM。
 
 **安全注意：** 测试 Token 只放在本地的 `.env.local`，由 Vite 开发代理注入；不要放在 `VITE_*` 变量或浏览器代码中。Vite 代理仅供本机测试，正式合并进 New API 时必须改为经过登录鉴权和额度计算的后端路由，不可公开测试代理。
 
