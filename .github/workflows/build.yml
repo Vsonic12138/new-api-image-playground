@@ -18,6 +18,8 @@ jobs:
         run: |
           node --check scripts/smoke-images.mjs
           node --check server/standalone.mjs
+      - name: Test image model capability rules (no paid requests)
+        run: npm run test:core
       - name: Check and build
         run: npm run build
       - name: Build production standalone bundle
