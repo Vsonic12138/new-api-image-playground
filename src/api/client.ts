@@ -1,5 +1,5 @@
 import i18n from 'i18next'
-import type { AppSettings, AssetRef, WorkMode } from '../types'
+import type { AppSettings, AssetRef, ImageProgressPhase, WorkMode } from '../types'
 import { saveImageResponse, saveBlob, fileFromAsset } from '../lib/image-store'
 const MOCK = import.meta.env.VITE_API_MODE !== 'relay'
 export const isMockMode = MOCK
@@ -12,9 +12,12 @@ async function parseResponse(res: Response): Promise<any> {
   if (!res.ok || data?.error) throw new Error(data?.error?.message || data?.message || `HTTP ${res.status}`)
   return data
 }
-export async function createImages(prompt: string, settings: AppSettings): Promise<AssetRef[]> {
+export async function createImages(prompt: string, settings: AppSettings, onProgress?: (phase: ImageProgressPhase) => void): Promise<AssetRef[]> {
+  onProgress?.('preparing')
   if (MOCK) {
+    onProgress?.('requesting')
     await sleep(750)
+    onProgress?.('saving')
     const result = []
     for (let i = 0; i < settings.count; i++) {
       const src = SAMPLE_URLS[(samplePointer++) % SAMPLE_URLS.length]
@@ -22,17 +25,22 @@ export async function createImages(prompt: string, settings: AppSettings): Promi
     }
     return result
   }
+  onProgress?.('requesting')
   const res = await fetch('/relay/v1/images/generations', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ model: settings.imageModel, prompt, n: settings.count, size: settings.size }),
   })
   const data = await parseResponse(res)
   if (!Array.isArray(data?.data) || !data.data.length) throw new Error('上游未返回图片')
+  onProgress?.('saving')
   return Promise.all(data.data.map((item: { url?: string; b64_json?: string }) => saveImageResponse(item)))
 }
-export async function editImages(prompt: string, image: AssetRef, settings: AppSettings, annotated?: Blob): Promise<AssetRef[]> {
+export async function editImages(prompt: string, image: AssetRef, settings: AppSettings, annotated?: Blob, onProgress?: (phase: ImageProgressPhase) => void): Promise<AssetRef[]> {
+  onProgress?.('preparing')
   if (MOCK) {
+    onProgress?.('requesting')
     await sleep(900)
+    onProgress?.('saving')
     return [{ id: `sample-edit-${Date.now()}`, src: SAMPLE_URLS[(samplePointer++) % SAMPLE_URLS.length], parentId: image.id, createdAt: Date.now() }]
   }
   const file = annotated
@@ -44,9 +52,11 @@ export async function editImages(prompt: string, image: AssetRef, settings: AppS
   form.append('image', file)
   form.append('n', String(settings.count))
   form.append('size', settings.size)
+  onProgress?.('requesting')
   const res = await fetch('/relay/v1/images/edits', { method: 'POST', body: form })
   const data = await parseResponse(res)
   if (!Array.isArray(data?.data) || !data.data.length) throw new Error('上游未返回编辑后的图片')
+  onProgress?.('saving')
   return Promise.all(data.data.map((item: { url?: string; b64_json?: string }) => saveImageResponse(item, image.id)))
 }
 export async function sendChat(prompt: string, history: Array<{ role: 'user' | 'assistant'; content: string }>, settings: AppSettings): Promise<string> {
