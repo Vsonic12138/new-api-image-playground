@@ -14,7 +14,11 @@ jobs:
           node-version: '22'
       - name: Install dependencies
         run: npm install
-      - name: Syntax-check live API smoke script (no billable requests)
-        run: node --check scripts/smoke-images.mjs
+      - name: Syntax-check smoke and standalone backend
+        run: |
+          node --check scripts/smoke-images.mjs
+          node --check server/standalone.mjs
       - name: Check and build
         run: npm run build
+      - name: Build production standalone bundle
+        run: npm run build:standalone
