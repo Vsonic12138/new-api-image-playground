@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 
 const apiBase = (process.env.NEW_API_BASE_URL || 'https://mhapi.net/v1').replace(/\/+$/, '')
 const token = process.env.NEW_API_TEST_TOKEN
-const model = process.env.IMAGE_TEST_MODEL || 'gpt-image-2'
+const model = process.env.IMAGE_TEST_MODEL || 'gpt-image-2.5-flare'
 const timeout = 180_000
 const maxBytes = 20 * 1024 * 1024
 
