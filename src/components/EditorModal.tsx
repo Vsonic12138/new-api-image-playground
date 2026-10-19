@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, PenLine, SquareDashed, RotateCcw, Trash2, Send, Info } from 'lucide-react'
 import { Stage, Layer, Image as KonvaImage, Line, Rect } from 'react-konva'
 import type Konva from 'konva'
@@ -9,6 +10,7 @@ type Shape = { kind: 'pen'; points: number[] } | { kind: 'rect'; x: number; y: n
 type Props = { asset: AssetRef; onClose: () => void; onSubmit: (prompt: string, annotatedImage?: Blob) => void }
 
 export function EditorModal({ asset, onClose, onSubmit }: Props) {
+  const {t} = useTranslation('imagePlayground')
   const [image, setImage] = useState<HTMLImageElement | null>(null)
   const [prompt, setPrompt] = useState('')
   const [tool, setTool] = useState<'pen' | 'rect'>('pen')
@@ -26,13 +28,13 @@ export function EditorModal({ asset, onClose, onSubmit }: Props) {
     getBlob(asset.id).then(blob => {
       if (!alive) return
       const src = blob ? (objectUrl = URL.createObjectURL(blob)) : asset.src
-      if (!src) { setError('图片不存在或已经被清理'); return }
+      if (!src) { setError(t('readImageFailed')); return }
       const htmlImage = new window.Image()
       htmlImage.crossOrigin = 'anonymous'
       htmlImage.onload = () => { if (alive) setImage(htmlImage) }
-      htmlImage.onerror = () => { if (alive) setError('无法读取原图，请尝试重新生成或上传图片') }
+      htmlImage.onerror = () => { if (alive) setError(t('readImageFailed')) }
       htmlImage.src = src
-    }).catch(() => { if (alive) setError('图片读取失败') })
+    }).catch(() => { if (alive) setError(t('readImageFailed')) })
     return () => { alive = false; if (objectUrl) URL.revokeObjectURL(objectUrl) }
   }, [asset.id, asset.src])
   const point = () => stage.current?.getPointerPosition()
@@ -54,7 +56,7 @@ export function EditorModal({ asset, onClose, onSubmit }: Props) {
     }))
   }
   const submit = async () => {
-    if (!prompt.trim()) { setError('请输入图片修改要求'); return }
+    if (!prompt.trim()) { setError(t('promptRequired')); return }
     setError('')
     try {
       let marked: Blob | undefined
@@ -66,35 +68,35 @@ export function EditorModal({ asset, onClose, onSubmit }: Props) {
       }
       onSubmit(prompt.trim(), marked)
     } catch {
-      setError('标注图导出失败（可能是上游图片限制跨域访问），请取消“附上标记”后重试')
+      setError(t('exportFailed'))
     }
   }
   return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
-    <div className="editor-modal" role="dialog" aria-modal="true" aria-label="编辑图片">
-      <div className="editor-head"><div><strong>编辑图片</strong><span>圈选只是视觉标注，暂不生成 Mask</span></div><button className="icon-button" onClick={onClose} title="关闭"><X size={20}/></button></div>
+    <div className="editor-modal" role="dialog" aria-modal="true" aria-label={t('editorTitle')}>
+      <div className="editor-head"><div><strong>{t('editorTitle')}</strong><span>{t('noMask')}</span></div><button className="icon-button" onClick={onClose} title="Close"><X size={20}/></button></div>
       <div className="editor-layout">
         <div className="editor-stage-col"><div className="editor-toolbar">
-          <button className={tool === 'pen' ? 'is-active' : ''} onClick={() => setTool('pen')}><PenLine size={17}/>画圈/画笔</button>
-          <button className={tool === 'rect' ? 'is-active' : ''} onClick={() => setTool('rect')}><SquareDashed size={17}/>框选</button>
+          <button className={tool === 'pen' ? 'is-active' : ''} onClick={() => setTool('pen')}><PenLine size={17}/>{t('draw')}</button>
+          <button className={tool === 'rect' ? 'is-active' : ''} onClick={() => setTool('rect')}><SquareDashed size={17}/>{t('rectangle')}</button>
           <span className="toolbar-divider"/>
-          <button onClick={() => setShapes(s => s.slice(0, -1))} disabled={!shapes.length}><RotateCcw size={16}/>撤销</button>
-          <button onClick={() => setShapes([])} disabled={!shapes.length}><Trash2 size={16}/>清除</button>
+          <button onClick={() => setShapes(s => s.slice(0, -1))} disabled={!shapes.length}><RotateCcw size={16}/>{t('undo')}</button>
+          <button onClick={() => setShapes([])} disabled={!shapes.length}><Trash2 size={16}/>{t('clearMarks')}</button>
         </div>
         <div className="stage-wrap" style={{ minHeight: height }}>{image ? <Stage ref={stage} width={width} height={height} onMouseDown={down} onMouseMove={move} onMouseUp={() => drawing.current = false} onTouchStart={down} onTouchMove={move} onTouchEnd={() => drawing.current = false}>
           <Layer><KonvaImage image={image} width={width} height={height}/>
           {shapes.map((shape, i) => shape.kind === 'pen'
             ? <Line key={i} points={shape.points} stroke="#ff4d63" strokeWidth={4} lineCap="round" lineJoin="round" tension={0.25}/>
             : <Rect key={i} x={shape.x} y={shape.y} width={shape.width} height={shape.height} stroke="#ff4d63" strokeWidth={3} dash={[9,5]}/>)}
-          </Layer></Stage> : <div className="stage-loading">{error || '正在加载图片…'}</div>}</div>
-        <p className="stage-note"><Info size={14}/> 标注可帮助表达修改位置，但没有 Mask 时模型不一定精确遵循选区。</p></div>
-        <aside className="editor-side"><h3>修改指令</h3><textarea rows={6} value={prompt} onChange={e => setPrompt(e.target.value)} placeholder="例如：把我画圈的区域换成竹蜻蜓，保持其余画面不变，并去除红色标记。"/>
-          <div className="quick-title">快捷提示</div><div className="quick-grid">
-          {['保持其他部分不变', '改成水彩风格', '换成夜景', '去掉画面中的标记'].map(t => <button key={t} onClick={() => setPrompt(v => v ? `${v}，${t}` : t)}>{t}</button>)}
+          </Layer></Stage> : <div className="stage-loading">{error || t('imageLoading')}</div>}</div>
+        <p className="stage-note"><Info size={14}/> {t('markInfo')}</p></div>
+        <aside className="editor-side"><h3>{t('editInstruction')}</h3><textarea rows={6} value={prompt} onChange={e => setPrompt(e.target.value)} placeholder={t('editorPromptExample')}/>
+          <div className="quick-title">{t('quickSuggestions')}</div><div className="quick-grid">
+          {(['keepUnchanged','watercolor','night','removeMarks'] as const).map(key => <button key={key} onClick={() => setPrompt(v => v ? `${v}, ${t(key)}` : t(key))}>{t(key)}</button>)}
           </div>
-          <label className="checkbox-row"><input type="checkbox" checked={includeMarks} onChange={e => setIncludeMarks(e.target.checked)}/> 附上已圈选标记的图片</label>
-          <div className="editor-warning">当前版本采用整图编辑。启用标记时，会把标注直接合成到参考图片上发送给模型（不是 Mask），可能影响生成结果。</div>
+          <label className="checkbox-row"><input type="checkbox" checked={includeMarks} onChange={e => setIncludeMarks(e.target.checked)}/> {t('attachMarked')}</label>
+          <div className="editor-warning">{t('wholeImageWarning')}</div>
           {error && <p className="form-error">{error}</p>}
-          <button className="primary-button editor-submit" onClick={submit} disabled={!image}><Send size={17}/>提交编辑</button>
+          <button className="primary-button editor-submit" onClick={submit} disabled={!image}><Send size={17}/>{t('submitEdit')}</button>
         </aside>
       </div>
     </div>
