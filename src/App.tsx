@@ -5,7 +5,8 @@ import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Downl
 import type { AppSettings, AssetRef, Conversation, ImageProgressPhase, Message, WorkMode } from './types'
 import { isImageModel, uuid } from './types'
 import { loadConversations, loadSettings, makeConversation, SESSION_KEY, SETTINGS_KEY } from './lib/conversations'
-import { createImages, editImages, importImage, isMockMode, sendChat } from './api/client'
+import { importImage, isMockMode } from './api/client'
+import { buildChatHistory, executeTask } from './application/execute-task'
 import { ImageView } from './components/ImageView'
 import { ImageLightbox } from './components/ImageLightbox'
 import { EditorModal } from './components/EditorModal'
@@ -137,32 +138,31 @@ export default function App() {
     const answerId = uuid()
     const pending: Message = { id: answerId, role: 'assistant', mode: actualMode, text: '', images: [], createdAt: Date.now(), status: 'pending', progressPhase: 'preparing' }
     modify(conversationId, c => ({ ...c, title: c.messages.length ? c.title : truncate(cleanPrompt, 24), updatedAt: Date.now(), messages: [...c.messages, input, pending] }))
-    const previous = active.messages
-      .filter(m => m.mode === 'chat' && m.text && m.status !== 'error')
-      .map(m => ({ role: m.role, content: m.text }))
+    const previous = buildChatHistory(active.messages)
     const reportProgress = (phase: ImageProgressPhase) => {
       modify(conversationId, c => ({...c, messages: c.messages.map(m => m.id === answerId ? {...m, progressPhase: phase} : m)}))
     }
     ;(async () => {
       try {
-        let answer = ''
-        let images: AssetRef[] = []
-        let actualProtocol: Message['protocol']
-        let responseId: string | undefined
-        let requestModel = actualMode === 'chat' ? (settings.chatProtocol === 'responses' ? settings.responsesModel : settings.chatModel) : (settings.imageProtocol === 'responses' ? settings.responsesModel : settings.imageModel)
-        if (actualMode === 'generate') {
-          const result = await createImages(cleanPrompt, settings, reportProgress)
-          images = result.images; actualProtocol = result.protocol; responseId = result.responseId
-          answer = result.text || t('generatedCount', {count: images.length})
-        } else if (actualMode === 'edit' && image) {
-          const annotatedPrompt = annotated ? `${cleanPrompt}\n参考图片上含有红色圈选标记，请理解为需要修改的位置，生成图中不要保留标记，其它部分尽可能保持一致。` : cleanPrompt
-          const result = await editImages(annotatedPrompt, image, settings, annotated, reportProgress)
-          images = result.images; actualProtocol = result.protocol; responseId = result.responseId
-          answer = (result.text || t('editedCount', {count: images.length})) + (annotated ? ` ${t('annotationsLimit')}` : '')
-        } else {
-          const result = await sendChat(cleanPrompt, previous, settings, selected)
-          answer = result.text; actualProtocol = result.protocol; responseId = result.responseId
-        }
+        const commandPrompt = actualMode === 'edit' && annotated
+          ? `${cleanPrompt}\n参考图片上含有红色圈选标记，请理解为需要修改的位置，生成图中不要保留标记，其它部分尽可能保持一致。`
+          : cleanPrompt
+        const result = await executeTask({
+          mode: actualMode,
+          prompt: commandPrompt,
+          settings,
+          reference: actualMode === 'edit' ? image : actualMode === 'chat' ? selected : undefined,
+          annotated,
+          history: previous,
+          onProgress: reportProgress,
+        })
+        const { images, protocol: actualProtocol, responseId, requestModel } = result
+        const answer = actualMode === 'generate'
+          ? result.text || t('generatedCount', {count: images.length})
+          : actualMode === 'edit'
+            ? (result.text || t('editedCount', {count: images.length})) + (annotated ? ` ${t('annotationsLimit')}` : '')
+            : result.text || ''
+        if (images.some(asset => asset.volatile)) setNotice(t('temporaryAsset'))
         modify(conversationId, c => ({ ...c, updatedAt: Date.now(), messages: c.messages.map(m => m.id === answerId ? { ...m, text: answer, images, protocol:actualProtocol, requestModel, responseId, status: 'done' as const } : m) }))
         if (images.length) setSelected(images[0])
       } catch (e) {

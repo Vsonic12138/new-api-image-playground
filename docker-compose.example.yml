@@ -1,0 +1,13 @@
+# Put this server behind a trusted HTTPS reverse proxy (Caddy/Nginx).
+# Do not publish plain HTTP to the internet or put admin credentials in env.
+services:
+  image-workspace:
+    build: .
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3005
+      UPSTREAM_API_BASE_URL: https://your-newapi.example.com/v1
+    expose:
+      - "3005"
+    restart: unless-stopped

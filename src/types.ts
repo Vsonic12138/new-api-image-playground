@@ -16,6 +16,8 @@ export type AssetRef = {
   src?: string
   name?: string
   parentId?: string
+  /** Browser storage failed; this asset exists in this tab only. */
+  volatile?: boolean
   createdAt: number
   protocol?: ResolvedProtocol
   responseId?: string

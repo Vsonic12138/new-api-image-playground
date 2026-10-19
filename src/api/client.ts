@@ -1,6 +1,7 @@
 import i18n from 'i18next'
-import type { ApiProtocol, AppSettings, AssetRef, ImageProgressPhase, ResolvedProtocol, WorkMode } from '../types'
+import type { AppSettings, AssetRef, ImageProgressPhase, ResolvedProtocol, WorkMode } from '../types'
 import { saveImageResponse, saveBlob, fileFromAsset } from '../lib/image-store'
+import { resolveImageProtocol, validateImageSettings } from '../core/capabilities'
 import {
   endpoint, isMockMode, parseChatResult, parseImagesResponse, parseResponsesResult,
   postJSON, postMultipart, toDataURL,
@@ -15,15 +16,6 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 export type ImageTaskResult = { images: AssetRef[]; protocol: ResolvedProtocol; responseId?: string; text?: string }
 export type ChatTaskResult = { text: string; protocol: 'chat'|'responses'; responseId?: string }
 
-function imageProtocol(preference: ApiProtocol): 'images'|'responses' {
-  if (preference === 'auto' || preference === 'images') return 'images'
-  if (preference === 'chat') {
-    // OpenAI Chat Completions has no standardized generated-image output.
-    // Vendor Chat image extensions require an administrator-verified adapter.
-    throw new Error('当前 Chat 协议没有已验证的图片输出适配器。请选择 Images 或 Responses。')
-  }
-  return preference
-}
 async function storeImages(
   results: Array<{b64_json?:string;url?:string}>,
   meta: {model:string;protocol:ResolvedProtocol;responseId?:string;parentId?:string},
@@ -50,7 +42,8 @@ function responsesInput(prompt: string, imageDataURL?: string, history?: Array<{
 export async function createImages(
   prompt: string, settings: AppSettings, onProgress?: (phase: ImageProgressPhase)=>void,
 ): Promise<ImageTaskResult> {
-  const protocol = imageProtocol(settings.imageProtocol)
+  validateImageSettings(settings)
+  const protocol = resolveImageProtocol(settings.imageProtocol)
   onProgress?.('preparing')
   if (isMockMode) {
     await sleep(260)
@@ -92,7 +85,8 @@ export async function editImages(
   prompt:string, image:AssetRef, settings:AppSettings, annotated?:Blob,
   onProgress?: (phase:ImageProgressPhase)=>void,
 ): Promise<ImageTaskResult> {
-  const protocol = imageProtocol(settings.imageProtocol)
+  validateImageSettings(settings)
+  const protocol = resolveImageProtocol(settings.imageProtocol)
   onProgress?.('preparing')
   if (isMockMode) {
     await sleep(280)
