@@ -1,5 +1,8 @@
 import type { ApiProtocol, AppSettings } from '../types'
-import { isImageModel } from '../types'
+export const IMAGE_MODELS = ['gpt-image-2.5-flare', 'gpt-image-2.5-sunburst'] as const
+export type ImageModel = (typeof IMAGE_MODELS)[number]
+export const isImageModel = (value: string): value is ImageModel =>
+  IMAGE_MODELS.some(model => model === value)
 
 /** Product policy: only the two configured GPT Image 2.5 models produce images. */
 export function validateImageSettings(settings: AppSettings): void {
