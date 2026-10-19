@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { LANGUAGE_OPTIONS, toIntlLocale } from './i18n/resources'
+import { LANGUAGE_OPTIONS, normalizeLanguage, toIntlLocale } from './i18n/resources'
 import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Download, RefreshCw, Pencil, Send, Paperclip, ChevronDown, Sparkles, PanelLeftClose, PanelLeftOpen, X, Menu, Check, Info, LoaderCircle, Search, Moon, Sun } from 'lucide-react'
 import type { AppSettings, AssetRef, Conversation, ImageProgressPhase, Message, WorkMode } from './types'
 import { isImageModel, uuid } from './types'
@@ -50,6 +50,22 @@ export default function App() {
   const active = convos.find(c => c.id === activeId) || convos[0]
   const updateModels = useCallback((models: string[]) => setAvailableModels(models), [])
 
+  useEffect(() => {
+    if (runtimeMode !== 'embedded') return
+    const onHostMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin || event.source !== window.parent) return
+      if (event.data?.source !== 'newapi-image-workspace-host') return
+      const message = event.data
+      if (message.themeMode === 'dark' || message.themeMode === 'light') {
+        setTheme(message.themeMode)
+      }
+      if (typeof message.lang === 'string' && message.lang.length <= 32) {
+        void i18n.changeLanguage(normalizeLanguage(message.lang))
+      }
+    }
+    window.addEventListener('message', onHostMessage)
+    return () => window.removeEventListener('message', onHostMessage)
+  }, [i18n])
   useEffect(() => () => window.clearTimeout(handoffTimer.current), [])
   useEffect(() => { if (runtimeMode !== 'embedded') localStorage.setItem(SESSION_KEY, JSON.stringify(convos)) }, [convos])
   useEffect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) }, [settings])
