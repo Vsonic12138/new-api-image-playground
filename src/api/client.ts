@@ -2,7 +2,7 @@ import type { AppSettings, AssetRef, WorkMode } from '../types'
 import { saveImageResponse, saveBlob, fileFromAsset } from '../lib/image-store'
 const MOCK = import.meta.env.VITE_API_MODE !== 'relay'
 export const isMockMode = MOCK
-const SAMPLE_URLS = ['/samples/robot-room.webp', '/samples/robot-sky.webp', '/samples/robot-night.webp', '/samples/robot-edit.webp']
+const SAMPLE_URLS = ['robot-room.webp', 'robot-sky.webp', 'robot-night.webp', 'robot-edit.webp'].map(file => `${import.meta.env.BASE_URL}samples/${file}`)
 let samplePointer = 0
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
