@@ -1,4 +1,5 @@
 export type WorkMode = 'generate' | 'edit' | 'chat'
+export type ImageProgressPhase = 'preparing' | 'requesting' | 'saving'
 export type AssetRef = {
   id: string
   /** Staged in IndexedDB where possible; remote URL fallback if cache blocked. */
@@ -15,6 +16,7 @@ export type Message = {
   images: AssetRef[]
   createdAt: number
   status?: 'pending' | 'error' | 'done'
+  progressPhase?: ImageProgressPhase
 }
 export type Conversation = {
   id: string
