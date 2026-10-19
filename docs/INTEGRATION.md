@@ -2,6 +2,8 @@
 
 > 云端作品库、管理员保留期限、到期通知和定时清理的详细实施规范见 [CLOUD_GALLERY_RETENTION.zh-CN.md](CLOUD_GALLERY_RETENTION.zh-CN.md)。**该功能尚未上线。**
 
+> 双协议图文对话（图片与文字同时支持 Chat / Responses；兼容 Images API）设计：[DUAL_PROTOCOL_PLAYGROUND.zh-CN.md](DUAL_PROTOCOL_PLAYGROUND.zh-CN.md)。Chat 图片生成仅在经过验证的供应商扩展下启用。
+
 ## Architecture
 
 This standalone project is a **feature-isolated prototype**. The production New API app should keep its existing Go Relay, quota charging, user auth and model mapping. Avoid reimplementing a public relay.
