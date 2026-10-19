@@ -668,3 +668,53 @@
     animation:none!important;
   }
 }
+
+
+/* Standalone BYOK connection. The token is never placed into browser persistence. */
+.app-shell .connection-pill {
+  display:inline-flex;gap:7px;align-items:center;justify-content:center;
+  padding:7px 11px;border-radius:11px;
+  font-size:11px;font-weight:600;
+  color:var(--pg-text);background:var(--pg-hover);
+  border:1px solid var(--pg-border);white-space:nowrap;
+  transition:background .18s ease,transform .18s ease;
+}
+.app-shell .connection-pill:hover{transform:translateY(-1px);filter:none}
+.app-shell .connection-pill.online{color:var(--pg-primary);background:var(--pg-primary-soft)}
+.app-shell .connection-modal {
+  width:min(440px,calc(100vw - 24px));
+  display:flex;flex-direction:column;gap:15px;
+  padding:22px;border-radius:18px;
+  background:var(--pg-panel);color:var(--pg-text);
+  border:1px solid var(--pg-border);
+  box-shadow:0 24px 70px rgba(0,0,0,.25);
+  animation:pg-dialog-in .24s ease-out both;
+}
+.app-shell .connection-modal header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.app-shell .connection-modal header strong{font-size:16px}
+.app-shell .connection-modal header p,.app-shell .connection-explain{font-size:12px;line-height:1.6;color:var(--pg-muted);margin:6px 0 0}
+.app-shell .connection-modal header button{border-radius:9px;background:var(--pg-surface);color:var(--pg-text);width:30px;height:30px;display:grid;place-items:center}
+.app-shell .connection-label{font-weight:600;font-size:12px}
+.app-shell .connection-modal input{
+  border:1px solid var(--pg-border);background:var(--pg-surface);
+  border-radius:11px;padding:12px;color:var(--pg-text);width:100%;
+  font-size:13px;
+}
+.app-shell .connection-explain{display:flex;align-items:start;gap:7px}
+.app-shell .connection-explain svg{flex-shrink:0;margin-top:2px}
+.app-shell .connection-submit,.app-shell .connection-logout{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;border-radius:11px;
+}
+.app-shell .connection-submit:disabled{opacity:.5}
+.app-shell .connection-logout{background:var(--pg-surface);color:var(--pg-text);border:1px solid var(--pg-border)}
+.app-shell .connection-state{
+  border:1px solid var(--pg-border);background:var(--pg-primary-soft);
+  display:flex;align-items:center;gap:10px;border-radius:12px;padding:13px;
+}
+.app-shell .connection-state>svg{color:var(--pg-primary)}
+.app-shell .connection-state>div{display:flex;flex-direction:column;gap:3px}
+.app-shell .connection-state strong{font-size:13px}
+.app-shell .connection-state small{font-size:11px;color:var(--pg-muted)}
+@media(max-width:900px){.app-shell .connection-pill{font-size:0;width:34px;height:34px;padding:0;border-radius:10px}}
+@media(prefers-reduced-motion:reduce){.app-shell .connection-modal{animation:none!important}}
