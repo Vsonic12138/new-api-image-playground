@@ -1,0 +1,117 @@
+/* Standalone New API-inspired skin. Local to the playground root.
+   On integration, prefer the host's semantic CSS tokens/shadcn primitives. */
+.app-shell {
+  --pg-bg: #ffffff;
+  --pg-panel: #ffffff;
+  --pg-sidebar: #fcfcfd;
+  --pg-subtle: #f8f9fa;
+  --pg-hover: #f2f5f8;
+  --pg-selected: #eef6ff;
+  --pg-text: #191b20;
+  --pg-muted: #717782;
+  --pg-border: #e7e9ed;
+  --pg-primary: #2683d8;
+  --pg-primary-soft: #ecf6fd;
+  --pg-primary-text: #ffffff;
+  --pg-surface: #f5f6f8;
+  --pg-overlay: rgba(15, 23, 42, .42);
+  background: var(--pg-bg);
+  color: var(--pg-text);
+}
+.app-shell.theme-dark {
+  color-scheme: dark;
+  --pg-bg: #303030;
+  --pg-panel: #383838;
+  --pg-sidebar: #2d2d2d;
+  --pg-subtle: #353535;
+  --pg-hover: #414141;
+  --pg-selected: #263e51;
+  --pg-text: #f2f2f2;
+  --pg-muted: #b1b1b1;
+  --pg-border: #4d4d4d;
+  --pg-primary: #4395d9;
+  --pg-primary-soft: #334857;
+  --pg-primary-text: #ffffff;
+  --pg-surface: #3e3e3e;
+  --pg-overlay: rgba(0,0,0,.65);
+}
+.app-shell .sidebar {background:var(--pg-sidebar);border-color:var(--pg-border);width:248px;box-shadow:none}
+.app-shell .brand {color:var(--pg-text);font-size:15px;letter-spacing:0}
+.app-shell .brand span {color:var(--pg-muted);font-weight:500}
+.app-shell .brand-icon {box-shadow:none;border-radius:11px;background:var(--pg-primary);color:#fff}
+.app-shell .new-chat-button {background:var(--pg-primary);color:var(--pg-primary-text);font-size:13px;box-shadow:none;border-radius:9px}
+.app-shell .new-chat-button kbd {display:none}
+.app-shell .primary-nav button {color:var(--pg-muted);font-weight:500;font-size:13px}
+.app-shell .primary-nav button.nav-active,.app-shell .primary-nav button:hover {color:var(--pg-primary);background:var(--pg-selected)}
+.app-shell .history-header,.app-shell .history-header button {color:var(--pg-muted)}
+.app-shell .search-bar {border-color:var(--pg-border);background:var(--pg-panel);color:var(--pg-muted)}
+.app-shell .search-bar input {color:var(--pg-text)}
+.app-shell .history-name {color:var(--pg-muted)}
+.app-shell .history-item.selected {background:var(--pg-selected)}
+.app-shell .selected .history-name {color:var(--pg-primary)}
+.app-shell .delete-chat,.app-shell .sidebar-footer small {color:var(--pg-muted)}
+.app-shell .sidebar-footer {border-color:var(--pg-border)}
+.app-shell .footer-avatar,.app-shell .user-bubble {background:var(--pg-surface);color:var(--pg-text);border:1px solid var(--pg-border)}
+.app-shell .topbar {height:59px;min-height:59px;background:var(--pg-panel);border-color:var(--pg-border)}
+.app-shell .model-pill {background:var(--pg-panel);color:var(--pg-text);border:1px solid var(--pg-border);font-weight:500;min-width:185px;border-radius:9px;padding:7px 11px}
+.app-shell .model-emoji {background:var(--pg-primary-soft);color:var(--pg-primary)}
+.app-shell .top-modes {background:var(--pg-surface);border:1px solid var(--pg-border);border-radius:9px}
+.app-shell .top-modes button {color:var(--pg-muted);padding:8px 13px}
+.app-shell .top-modes button.active {color:var(--pg-primary);background:var(--pg-panel);outline:1px solid var(--pg-border);box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.app-shell .icon-button {color:var(--pg-muted)}
+.app-shell .icon-button:hover {background:var(--pg-hover)}
+.app-shell .mode-badge.mock {background:var(--pg-surface);color:var(--pg-muted);border:1px solid var(--pg-border)}
+.app-shell .mode-badge.real {background:var(--pg-primary-soft);color:var(--pg-primary);border:1px solid var(--pg-border)}
+.app-shell .chat-scroll {scrollbar-color:var(--pg-border) transparent}
+.app-shell .message-time {color:var(--pg-muted)}
+.app-shell .user-bubble-text {background:var(--pg-surface);color:var(--pg-text);border:1px solid var(--pg-border);border-radius:14px}
+.app-shell .assistant-avatar {background:var(--pg-primary);color:#fff}
+.app-shell .assistant-text {border:0;background:transparent;color:var(--pg-text);padding:4px 0 8px}
+.app-shell .assistant-text.error-text {background:#fff1f0;border:1px solid #fad7d4;padding:12px;color:#bd3535}
+.app-shell .pending-answer {color:var(--pg-muted)}
+.app-shell .result-image-item {background:var(--pg-panel);border:1px solid var(--pg-border);box-shadow:0 1px 3px rgba(0,0,0,.035)}
+.app-shell .image-frame {background:var(--pg-surface)}
+.app-shell .image-loading {color:var(--pg-muted)}
+.app-shell .image-actions button,.app-shell .inspector-buttons button {background:var(--pg-surface);border:1px solid var(--pg-border);color:var(--pg-text);border-radius:8px}
+.app-shell .empty-state {color:var(--pg-text)}
+.app-shell .empty-logo {background:var(--pg-primary-soft);color:var(--pg-primary)}
+.app-shell .empty-state p {color:var(--pg-muted)}
+.app-shell .inspiration-row button {background:var(--pg-panel);color:var(--pg-muted);border:1px solid var(--pg-border);border-radius:9px}
+.app-shell .composer {background:var(--pg-panel);border:1px solid var(--pg-border);box-shadow:0 8px 26px -20px rgba(0,0,0,.35);border-radius:13px}
+.app-shell .composer:focus-within {border-color:var(--pg-primary);box-shadow:0 0 0 3px var(--pg-primary-soft)}
+.app-shell .composer-tabs button {color:var(--pg-muted)}
+.app-shell .composer-tabs button.active {background:var(--pg-primary-soft);color:var(--pg-primary)}
+.app-shell .composer textarea {color:var(--pg-text);background:transparent;border-radius:8px}
+.app-shell .composer textarea::placeholder {color:var(--pg-muted)}
+.app-shell .secondary-button {background:var(--pg-panel);border:1px solid var(--pg-border);color:var(--pg-text)}
+.app-shell .primary-button {background:var(--pg-primary);color:#fff;border-radius:9px}
+.app-shell .picked-image {color:var(--pg-muted);border-color:var(--pg-border)}
+.app-shell .picked-image button {color:var(--pg-muted)}
+.app-shell .composer-tip {color:var(--pg-muted)}
+.app-shell .inspector {background:var(--pg-panel);border-color:var(--pg-border);width:275px}
+.app-shell .inspector-header,.app-shell .inspector-history {border-color:var(--pg-border)}
+.app-shell .asset-metadata {color:var(--pg-text)}
+.app-shell .asset-metadata span:first-child,.app-shell .inspector-blank,.app-shell .section-title span {color:var(--pg-muted)}
+.app-shell .inspector-hint {color:var(--pg-primary)}
+.app-shell .history-gallery .image-frame.active {border-color:var(--pg-primary)}
+.app-shell .modal-backdrop {background:var(--pg-overlay)}
+.app-shell .settings-modal,.app-shell .editor-modal {background:var(--pg-panel);color:var(--pg-text);border:1px solid var(--pg-border);box-shadow:0 24px 64px rgba(0,0,0,.22)}
+.app-shell .muted,.app-shell .settings-modal>label,.app-shell .stage-note,.app-shell .checkbox-row {color:var(--pg-muted)}
+.app-shell .settings-modal>label>input,.app-shell .settings-modal>label>select,.app-shell .editor-side textarea {background:var(--pg-panel);color:var(--pg-text);border:1px solid var(--pg-border)}
+.app-shell .notice-box,.app-shell .editor-warning {background:var(--pg-primary-soft);border:1px solid var(--pg-border);color:var(--pg-muted)}
+.app-shell .toast {background:var(--pg-panel);color:var(--pg-text);border:1px solid var(--pg-border);box-shadow:0 10px 32px rgba(0,0,0,.17)}
+.app-shell .toast button {color:var(--pg-muted)}
+.app-shell .editor-head,.app-shell .editor-side {border-color:var(--pg-border)}
+.app-shell .editor-head span {color:var(--pg-muted)}
+.app-shell .editor-toolbar {background:var(--pg-subtle);border:1px solid var(--pg-border)}
+.app-shell .editor-toolbar button {color:var(--pg-muted)}
+.app-shell .editor-toolbar button.is-active {background:var(--pg-primary-soft);color:var(--pg-primary)}
+.app-shell .toolbar-divider {background:var(--pg-border)}
+.app-shell .quick-grid button {background:var(--pg-surface);border:1px solid var(--pg-border);color:var(--pg-text)}
+.app-shell .stage-wrap {background:var(--pg-surface)}
+.app-shell .stage-loading {color:var(--pg-muted)}
+.app-shell .checkbox-row input {accent-color:var(--pg-primary)}
+.app-shell .form-error {color:#c53e3e}
+.app-shell .language-select {background:var(--pg-panel);border:1px solid var(--pg-border);color:var(--pg-text);border-radius:8px;height:34px;min-width:92px;padding:0 8px;font-size:12px}
+.app-shell .theme-switch {border:1px solid var(--pg-border);border-radius:8px}
+@media(max-width:740px){.app-shell .sidebar{width:248px}.app-shell .topbar{height:59px;min-height:59px}.app-shell .inspector{display:none}.app-shell .language-select{min-width:64px;max-width:92px;font-size:11px}}
