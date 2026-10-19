@@ -21,7 +21,14 @@ export function loadConversations(): Conversation[] {
     const raw = localStorage.getItem(SESSION_KEY)
     if (!raw) return [example()]
     const parsed: unknown = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed as Conversation[] : [example()]
+    // Requests cannot resume after a page reload; never leave an endless spinner.
+    if (!Array.isArray(parsed)) return [example()]
+    return (parsed as Conversation[]).map(conversation => ({
+      ...conversation,
+      messages: conversation.messages.map(message => message.status === 'pending'
+        ? {...message, status: 'error' as const, text: i18n.t('requestInterrupted', {ns:'imagePlayground'})}
+        : message),
+    }))
   } catch { return [example()] }
 }
 export function loadSettings(): AppSettings {
