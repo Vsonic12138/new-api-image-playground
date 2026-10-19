@@ -55,7 +55,7 @@ const en: Record<string,string> = {
   submitEdit:'Submit edit', promptRequired:'Enter edit instructions.',
   readImageFailed:'Cannot read the selected image. Upload it again or regenerate.',
   imageLoading:'Loading image…', exportFailed:'Annotation export failed. Try disabling marked image attachment.',
-  localDataHint:'Conversation history is stored in this browser.',
+  localDataHint:'Creations are stored in this browser; clearing site data can remove them.',
 }
 const zhCN: Record<string,string> = {
   brand:'AI 创作 Playground',newChat:'新建对话',createSpace:'创作空间',myWorks:'我的作品',
@@ -93,7 +93,7 @@ const zhCN: Record<string,string> = {
   wholeImageWarning:'当前为整图编辑，标注会合成进参考图（不是 Mask），可能影响结果。',
   submitEdit:'提交编辑',promptRequired:'请输入图片修改要求。',
   readImageFailed:'无法读取原图，请重新上传或生成。',imageLoading:'正在加载图片…',
-  exportFailed:'标注图导出失败，请取消附上标记后重试。',localDataHint:'会话历史仅保存在当前浏览器。',
+  exportFailed:'标注图导出失败，请取消附上标记后重试。',localDataHint:'创作记录保存在当前浏览器，清理网站数据可能导致丢失。',
 }
 const zhTW: Record<string,string> = {
   brand:'AI 創作 Playground',newChat:'新增對話',createSpace:'創作空間',myWorks:'我的作品',
@@ -308,7 +308,7 @@ for (const [lang, phrases] of Object.entries(interactionText)) {
 const editingExperienceText: Record<string, Record<string,string>> = {
   zhCN: {
     progressPreparing:'准备图片请求',progressGenerating:'等待模型生成',progressEditing:'等待模型编辑',
-    progressSavingLocal:'整理并保存结果',progressEstimateDisclaimer:'正在处理，请稍候',
+    progressSavingLocal:'整理图片结果',progressEstimateDisclaimer:'正在处理，请稍候',
     progressElapsed:'已等待 {{time}}',progressNoPercentage:'仅显示实际处理阶段；上游接口暂不提供百分比进度。',
     annotationTools:'图片标注工具',annotationCount:'{{count}} 处标注',brushSize:'画笔粗细',
     penFeedback:'在图片上拖动绘制标记，可随时撤销（Ctrl+Z）。',
@@ -326,7 +326,7 @@ const editingExperienceText: Record<string, Record<string,string>> = {
   },
   zhTW: {
     progressPreparing:'準備圖片請求',progressGenerating:'等待模型生成',progressEditing:'等待模型編輯',
-    progressSavingLocal:'整理並保存結果',progressEstimateDisclaimer:'正在處理，請稍候',
+    progressSavingLocal:'整理圖片結果',progressEstimateDisclaimer:'正在處理，請稍候',
     progressElapsed:'已等待 {{time}}',progressNoPercentage:'只顯示實際處理階段；上游接口沒有百分比進度。',
     annotationTools:'圖片標註工具',annotationCount:'{{count}} 處標註',brushSize:'畫筆粗細',
     penFeedback:'在圖片拖動繪製標記，可隨時復原 (Ctrl+Z)。',
@@ -373,6 +373,17 @@ const editingExperienceText: Record<string, Record<string,string>> = {
 for (const [lang, phrases] of Object.entries(editingExperienceText)) {
   Object.assign(imagePlaygroundTranslations[lang], phrases)
 }
+
+const interruptedRequestText: Record<string, string> = {
+  zhCN: "图片请求因刷新或关闭页面中断，请重新生成。",
+  en: "The request was interrupted when the page closed or reloaded. Please try again.",
+  zhTW: "圖片請求因重新整理或關閉頁面而中斷，請重新產生。",
+  ja: "ページの再読み込みにより処理が中断されました。再度お試しください。",
+  fr: "La requête a été interrompue lors du rechargement. Veuillez réessayer.",
+  ru: "Запрос прервался при перезагрузке страницы. Попробуйте еще раз.",
+  vi: "Yêu cầu bị gián đoạn khi tải lại trang. Vui lòng thử lại.",
+}
+for (const [lang, message] of Object.entries(interruptedRequestText)) imagePlaygroundTranslations[lang].requestInterrupted = message
 
 export const imagePlaygroundResources = Object.fromEntries(
   Object.entries(imagePlaygroundTranslations).map(([lng,dict]) => [lng,{imagePlayground:dict}])
