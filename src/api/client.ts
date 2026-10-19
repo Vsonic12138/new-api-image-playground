@@ -1,3 +1,4 @@
+import i18n from 'i18next'
 import type { AppSettings, AssetRef, WorkMode } from '../types'
 import { saveImageResponse, saveBlob, fileFromAsset } from '../lib/image-store'
 const MOCK = import.meta.env.VITE_API_MODE !== 'relay'
@@ -51,7 +52,7 @@ export async function editImages(prompt: string, image: AssetRef, settings: AppS
 export async function sendChat(prompt: string, history: Array<{ role: 'user' | 'assistant'; content: string }>, settings: AppSettings): Promise<string> {
   if (MOCK) {
     await sleep(580)
-    return `已收到你的消息：「${prompt}」。这是演示回复。切换为 relay 模式后，会调用 New API 的 /v1/chat/completions。你也可以选择“生图”或“修图”模式。`
+    return i18n.t('mockChatReply', {ns:'imagePlayground', prompt})
   }
   const res = await fetch('/relay/v1/chat/completions', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
