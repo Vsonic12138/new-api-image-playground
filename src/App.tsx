@@ -5,7 +5,7 @@ import { Plus, MessageCircle, Image as ImageIcon, WandSparkles, Settings2, Downl
 import type { AppSettings, AssetRef, Conversation, Message, WorkMode } from './types'
 import { uuid } from './types'
 import { loadConversations, loadSettings, makeConversation, SESSION_KEY, SETTINGS_KEY } from './lib/conversations'
-import { createImages, editImages, importImage, isMockMode, modeLabel, sendChat } from './api/client'
+import { createImages, editImages, importImage, isMockMode, sendChat } from './api/client'
 import { ImageView } from './components/ImageView'
 import { EditorModal } from './components/EditorModal'
 import { fileFromAsset } from './lib/image-store'
