@@ -31,9 +31,15 @@ const hosts: Record<ApiRuntime, HostAdapter> = {
   embedded: {
     mode: 'embedded',
     apiPrefix: '/pg/image-playground',
-    credentialHeaders: () => embeddedCredential.mode === 'token'
-      ? { 'X-Playground-Token-ID': String(embeddedCredential.tokenId) }
-      : embeddedCredential.group ? { 'X-Playground-Group': embeddedCredential.group } : {},
+    credentialHeaders: (): Record<string, string> => {
+      if (embeddedCredential.mode === 'token') {
+        return { 'X-Playground-Token-ID': String(embeddedCredential.tokenId) }
+      }
+      if (embeddedCredential.group) {
+        return { 'X-Playground-Group': embeddedCredential.group }
+      }
+      return {}
+    },
   },
 }
 
