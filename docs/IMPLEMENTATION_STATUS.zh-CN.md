@@ -57,3 +57,11 @@ NODE_ENV=production \
 - Chat 和 Responses 的文本 SSE、停止生成与实时图片进度接线。
 - 为上下文跨轮续接验证 `previous_response_id`、存储策略/渠道黏性。
 - 用户作品集、本地清理导出、将来可选 R2（当前不实施）。
+
+## 双宿主实施补充（Draft PR）
+
+- 已提取业务层 `src/core`、`src/application`、`src/host`；所有运行方式共用同一 React UI。
+- Standalone 支持 Docker 构建与服务端图片模型白名单；IndexedDB 失败时提供当前标签页临时图片。
+- Embedded 可运行 `npm run build:embedded` 并同源部署到 `/pg-image-workspace/`；NewAPI PR #2 增加导航页面和四路 Relay 路径映射。
+- Embedded 浏览器会话目前不跨刷新持久化，避免不同用户读取固定 localStorage 键中的历史。
+- 构建与模拟上游测试不产生付费请求。NewAPI PR 尚未合并，**不能视为 Task Plugin 市场可安装的 UI 插件**。
