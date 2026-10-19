@@ -45,6 +45,10 @@ NEW_API_TEST_TOKEN=你的低额度测试Token
 
 **安全注意：** 测试 Token 只放在本地的 `.env.local`，由 Vite 开发代理注入；不要放在 `VITE_*` 变量或浏览器代码中。Vite 代理仅供本机测试，正式合并进 New API 时必须改为经过登录鉴权和额度计算的后端路由，不可公开测试代理。
 
+## 双协议与真实模型接入规划
+
+文生图、图片编辑、文字聊天和图片问答将提供 Chat Completions 与 Responses 两种协议选择（并保留 Images API 兼容模式）；但标准 Chat Completions 本身不提供通用图片输出，第三方 Chat 生图需验证对应供应商格式。正式启用需要 NewAPI 登录态 BFF，GitHub Pages 暂时仍为 Mock。详细设计见 [双协议图文 Playground 方案](docs/DUAL_PROTOCOL_PLAYGROUND.zh-CN.md)。
+
 ## 云端作品库与自动清理（规划中）
 
 已确认方案 C：NewAPI 账号级云端作品集、管理员可设置图片保留天数（含永久）、到期前站内通知，以及后台自动清理。
