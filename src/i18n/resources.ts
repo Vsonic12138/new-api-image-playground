@@ -275,6 +275,20 @@ export const imagePlaygroundTranslations: Record<string,Record<string,string>> =
   en, zhCN: {...en,...zhCN}, zhTW:{...en,...zhTW},
   fr:{...en,...fr}, ru:{...en,...ru}, ja:{...en,...ja}, vi:{...en,...vi},
 }
+
+const welcomeText: Record<string,Record<string,string>> = {
+  zhCN: {exampleTitle:'蓝色机器人猫 · 图片创作示例',examplePrompt:'帮我生成一只可爱的蓝色机器人猫，在阳光温暖的房间里，3D 卡通风格。',exampleAnswer:'已为你生成示例图片。点击图片查看详情，或选择继续编辑。',mockChatReply:'已收到你的消息：「{{prompt}}」。这是 Mock 演示回复；使用真实聊天模型需要连接 New API。'},
+  en: {exampleTitle:'Blue robot cat · Demo conversation',examplePrompt:'Create a cute blue robot cat in a warm, sunny room, 3D cartoon style.',exampleAnswer:'Sample images are ready. Select a picture to view its details or continue editing.',mockChatReply:'Your message was: "{{prompt}}". This is a demo response. Connect a chat model for real conversations.'},
+  zhTW: {exampleTitle:'藍色機器貓 · 示範對話',examplePrompt:'請生成一隻可愛的藍色機器貓，坐在陽光溫暖的房間裡，3D 卡通風格。',exampleAnswer:'示範圖片已完成。點擊圖片查看詳情或繼續編輯。',mockChatReply:'已收到你的訊息：「{{prompt}}」。這是展示回覆，連線到 New API 才能使用真實聊天模型。'},
+  ja: {exampleTitle:'青いロボット猫 · デモ',examplePrompt:'日差しのある部屋にかわいい青いロボット猫を3Dイラストで描いてください。',exampleAnswer:'サンプル画像ができました。画像を選んで編集できます。',mockChatReply:'メッセージ「{{prompt}}」を受け取りました。これはデモの返信です。'},
+  fr: {exampleTitle:'Chat robot bleu · Démo',examplePrompt:'Crée un adorable chat robot bleu dans une pièce ensoleillée, style 3D.',exampleAnswer:'Les images de démonstration sont prêtes. Sélectionnez-en une pour la modifier.',mockChatReply:'Votre message : « {{prompt}} ». Ceci est une réponse de démonstration.'},
+  ru: {exampleTitle:'Синий робот-кот · Демо',examplePrompt:'Нарисуй милого синего робота-кота в солнечной комнате, стиль 3D.',exampleAnswer:'Примеры готовы. Выберите изображение для просмотра или редактирования.',mockChatReply:'Получено сообщение: «{{prompt}}». Это демонстрационный ответ.'},
+  vi: {exampleTitle:'Mèo rô-bốt xanh · Demo',examplePrompt:'Tạo một chú mèo rô-bốt màu xanh trong phòng đầy nắng, phong cách hoạt hình 3D.',exampleAnswer:'Đã có ảnh mẫu. Chọn ảnh để xem chi tiết hoặc tiếp tục chỉnh sửa.',mockChatReply:'Đã nhận tin nhắn “{{prompt}}”. Đây là phản hồi demo.'},
+}
+for (const [lang, phrases] of Object.entries(welcomeText)) {
+  Object.assign(imagePlaygroundTranslations[lang], phrases)
+}
+
 export const imagePlaygroundResources = Object.fromEntries(
   Object.entries(imagePlaygroundTranslations).map(([lng,dict]) => [lng,{imagePlayground:dict}])
 )
