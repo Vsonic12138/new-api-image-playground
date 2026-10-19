@@ -1,0 +1,51 @@
+name: Live image API smoke test
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_paid_calls:
+        description: "I approve up to 2 billable API calls (generate 1 image, then edit it once)"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-smoke-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  image-api-smoke:
+    if: ${{ inputs.confirm_paid_calls == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      NEW_API_BASE_URL: https://mhapi.net/v1
+      IMAGE_TEST_MODEL: gpt-image-2
+      NEW_API_TEST_TOKEN: ${{ secrets.NEW_API_TEST_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check test credential is configured
+        shell: bash
+        run: |
+          if [ -z "$NEW_API_TEST_TOKEN" ]; then
+            echo "::error::NEW_API_TEST_TOKEN Secret is not configured. Add it in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+      - name: Generate one image and edit it once
+        run: node scripts/smoke-images.mjs
+      - name: Save images for inspection (one day)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-smoke-output
+          path: test-output/
+          retention-days: 1
+          if-no-files-found: ignore
